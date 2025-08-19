@@ -198,18 +198,22 @@ fun SignUp(navController: NavController,viewModel: MusicViewModel) {
                 Button(
                     onClick = {
                         if(email != "" && password != "") {
-                            viewModel.register(email, password) { result ->
+                            viewModel.signUp(email, password) { result,msg ->
                                 if (result==true) {
                                     Toast.makeText(
                                         context,
-                                        "SignIn Successfully",
+                                        msg,
                                         Toast.LENGTH_SHORT
                                     ).show()
-                                    navController.navigate("Main")
+                                    navController.navigate("MenuScreen"){
+                                        popUpTo("SignUp"){
+                                            inclusive=true
+                                        }
+                                    }
                                 } else {
                                     Toast.makeText(
                                         context,
-                                        "Already Have An Account .Enter Another Email And Password",
+                                        msg,
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
@@ -77,41 +78,43 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                 brush = Brush.linearGradient(
                     listOf(Color(0xFF3B1871), Color(0xFF0D171A))
                 )
-            ),
-        containerColor = Color.Transparent,
-        topBar = {
+            ), containerColor = Color.Transparent, topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "NOW PLAYING",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                },
-                navigationIcon = {
+                Text(
+                    "NOW PLAYING",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }, navigationIcon = {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Back",
+                    modifier = Modifier.size(50.dp),
+                    tint = Color.White
+                )
+            }, actions = {
+                IconButton(onClick = {
+                    val currentVideo = state.currentPlaylist.getOrNull(state.currentIndex)
+                    if (currentVideo != null) {
+                        viewModel.addToFavourites(currentVideo)
+                    }
+                }) {
+                    val currentVideo = state.currentPlaylist.getOrNull(state.currentIndex)
+                    val isFavorite = currentVideo != null && state.favorites.any { it.videoId == currentVideo.videoId }
+
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Back",
-                        modifier = Modifier.size(50.dp),
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favourite",
+                        modifier = Modifier.size(40.dp),
                         tint = Color.White
                     )
-                },
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(
-                            imageVector = Icons.Default.FavoriteBorder,
-                            contentDescription = "Favourite",
-                            modifier = Modifier.size(40.dp),
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                }
+            }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
-        }
-    ) { innerPadding ->
+        }) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -122,16 +125,14 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .size(50.dp)
-                        .padding(16.dp),
-                    color = Color.White
+                        .padding(16.dp), color = Color.White
                 )
             } else {
                 Box {
                     AsyncImage(
                         model = ImageRequest.Builder(context = LocalContext.current)
-                            .data(state.results.getOrNull(viewModel.currentIndex)?.thumbnailUrl)
-                            .crossfade(true)
-                            .build(),
+                            .data(state.currentPlaylist.getOrNull(state.currentIndex)?.thumbnailUrl)
+                            .crossfade(true).build(),
                         contentDescription = null,
                         placeholder = painterResource(R.drawable.imageloader),
                         contentScale = ContentScale.FillWidth,
@@ -142,10 +143,11 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                     )
                 }
                 Text(
-                    state.results.getOrNull(viewModel.currentIndex)?.title ?: "",
+                    state.currentPlaylist.getOrNull(state.currentIndex)?.title ?: "",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
+                    maxLines = 1,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
@@ -167,8 +169,7 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth(.9f)
                         .align(Alignment.CenterHorizontally),
-                    interactionSource = remember { MutableInteractionSource() }
-                )
+                    interactionSource = remember { MutableInteractionSource() })
                 Row(
                     modifier = Modifier
                         .fillMaxWidth(.9f)
@@ -180,8 +181,7 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                         color = Color.White
                     )
                     Text(
-                        text = formatTime(viewModel.exoPlayer?.duration ?: 1L),
-                        color = Color.White
+                        text = formatTime(viewModel.exoPlayer?.duration ?: 1L), color = Color.White
                     )
                 }
                 Row(
@@ -207,8 +207,7 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                             .background(
                                 Brush.linearGradient(
                                     colors = listOf(Color(0xFF304FFE), Color(0xFF00B8D4))
-                                ),
-                                shape = CircleShape
+                                ), shape = CircleShape
                             ),
                         colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent)
                     ) {

@@ -44,7 +44,7 @@ import androidx.navigation.NavController
 import com.example.musicapp.MusicViewModel
 
 @Composable
-fun LogInScreen(navController: NavController,viewModel: MusicViewModel) {
+fun LogIn(navController: NavController,viewModel: MusicViewModel) {
     val context = LocalContext.current
     var email by remember {
         mutableStateOf("")
@@ -195,16 +195,20 @@ fun LogInScreen(navController: NavController,viewModel: MusicViewModel) {
                 Button(
                     onClick = {
                         if(email != "" && password != "") {
-                            viewModel.login(email, password) { result ->
+                            viewModel.logIn(email, password) { result,msg ->
                                 if (result==true) {
                                     Toast.makeText(
                                         context,
-                                        "LogIn Successfully",
+                                        msg,
                                         Toast.LENGTH_SHORT
                                     ).show()
-                                    navController.navigate("Main")
+                                    navController.navigate("MenuScreen"){
+                                        popUpTo("LogIn"){
+                                            inclusive=true
+                                        }
+                                    }
                                 } else {
-                                    Toast.makeText(context, "Invalid User", Toast.LENGTH_SHORT)
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT)
                                         .show()
                                 }
                             }

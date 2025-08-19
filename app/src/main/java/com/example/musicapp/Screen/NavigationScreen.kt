@@ -8,7 +8,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.musicapp.HomeScreen.MusicPlayerScreen
+import com.example.musicapp.Authentication.LogIn
+import com.example.musicapp.Authentication.SignUp
 import com.example.musicapp.MusicViewModel
 
 @SuppressLint("ViewModelConstructorInComposable")
@@ -18,8 +19,18 @@ fun NavigationScreen(modifier: Modifier) {
     val context = LocalContext.current
 
     val viewModel = remember { MusicViewModel(context) }
-    NavHost(navController = navController, startDestination = "MusicPlayerScreen") {
-        composable("MusicPlayerScreen") {
+    NavHost(navController = navController, startDestination = "SplashScreen") {
+
+
+        composable("MenuScreen") {
+            MenuScreen(navController , viewModel)
+        }
+        composable("SplashScreen") {
+            SplashScreen(navController, viewModel)
+        }
+
+
+        composable("HomeScreen") {
             MusicPlayerScreen(
                 viewModel = viewModel,
                 modifier = modifier,
@@ -33,6 +44,18 @@ fun NavigationScreen(modifier: Modifier) {
                 navController = navController
             )
         }
+
+        composable("LogIn") {
+            LogIn(navController, viewModel)
+        }
+
+
+        composable("SignUp") {
+            SignUp(navController, viewModel)
+        }
+
+
+
 
 
     }
