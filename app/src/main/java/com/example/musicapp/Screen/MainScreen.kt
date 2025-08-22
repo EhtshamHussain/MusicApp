@@ -71,6 +71,8 @@ fun MainScreen(navController: NavController, viewModel: MusicViewModel) {
                                     restoreState = true
                                     launchSingleTop = true
                                 }
+
+
                             }
 
                         },
@@ -102,6 +104,7 @@ fun MainScreen(navController: NavController, viewModel: MusicViewModel) {
             composable("MenuScreen") { MenuScreen(navController, bottomNavController, viewModel) }
             composable("PlayList") { PlayList(navController, bottomNavController, viewModel) }
             composable("SettingScreen") { SettingScreen() }
+            composable("HistoryScreen") { HistoryScreen(navController ,bottomNavController , viewModel) }
         }
 
     }

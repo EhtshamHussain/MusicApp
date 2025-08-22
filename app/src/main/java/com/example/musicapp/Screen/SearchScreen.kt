@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -188,7 +189,6 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
@@ -233,6 +233,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(82.dp)
                                 .clickable {
                                     val index = state.results.indexOf(video)
                                     viewModel.playVideo(
@@ -246,8 +247,10 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                                 .padding(8.dp)
                         ) {
                             if (video.thumbnailUrl != null) {
-                                Row( modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     AsyncImage(
                                         model = ImageRequest.Builder(LocalContext.current)
                                             .data(video.thumbnailUrl)
@@ -257,7 +260,8 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                                         placeholder = painterResource(R.drawable.imageloader),
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
-                                            .size(80.dp)
+                                            .width(100.dp)
+                                            .aspectRatio(16f / 9f)
                                             .clip(RoundedCornerShape(8.dp))
                                     )
 
@@ -276,8 +280,8 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                                     }
 
                                     Box(
-//                                        modifier = Modifier
-//                                            .padding(16.dp)
+                                        modifier = Modifier
+                                            .padding(1.dp)
                                     ) {
                                         IconButton(onClick = { expanded = !expanded }) {
                                             Icon(

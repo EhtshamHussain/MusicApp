@@ -66,5 +66,7 @@ fun MusicAppTheme(
         systemUiController.setSystemBarsColor(Color.Black)
         systemUiController.setNavigationBarColor(Color(0xFF1D1C1C))
     }
+
+
 }
 
