@@ -11,13 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun SettingScreen(modifier: Modifier = Modifier) {
     Column(modifier = Modifier
         .fillMaxSize()
         .background(color = Color.Black),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text("Home Screen"  , color = Color.White)
+        ) {
+        Text("Setting Screen"  , color = Color.White)
     }
 }

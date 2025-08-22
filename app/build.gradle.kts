@@ -38,6 +38,9 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        resources.excludes.add("google/protobuf/*.proto")  // Exclude duplicate proto file
+    }
 }
 
 dependencies {
@@ -51,6 +54,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -67,14 +71,15 @@ dependencies {
     implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
 
     // NewPipe Extractor
-    implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.24.8")
+    implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.24.8"){
+        exclude(group = "com.google.protobuf", module = "protobuf-javalite")
+    }
 
 
 
     // ExoPlayer (Media3)
     implementation ("androidx.media3:media3-exoplayer:1.3.1")
     implementation ("androidx.media3:media3-ui:1.3.1")
-    implementation("com.google.android.exoplayer:exoplayer:2.19.1")
 
     // Coroutines
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
@@ -88,5 +93,9 @@ dependencies {
 
     //for more button
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
+
+
+    //Status bar
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.27.0")
 
 }

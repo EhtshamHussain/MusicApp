@@ -2,7 +2,8 @@ package com.example.musicapp
 
 
 import android.content.Context
-import androidx.compose.material3.rememberTooltipState
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -14,30 +15,101 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicapp.ExoPlayer.playAudio
 import com.example.musicapp.NewPipe.getAudioUrl
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 
 class MusicViewModel(private val context: Context) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
-
     val uiState: StateFlow<UiState> = _uiState
+    private var isSeeking = false // New flag to track seeking
+
+    //navBar Tab
+    val selecteTab = mutableStateOf(0)
 
 
-    /**
-     * Firebase Authentication
-     */
-
+    //Firebse
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+    private val currentUserId: String? get() = auth.currentUser?.uid
+
+
 
 
     var exoPlayer: ExoPlayer? = null
 
+    init {
+        if(isLoggedIn()){
+            loadListsFromFirestore()
+        }
+    }
 
+    private fun loadListsFromFirestore() {
+        if (!isLoggedIn()) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val userDoc = firestore.collection("users").document(currentUserId!!).get().await()
+                if (userDoc.exists()) {
+                    val recent = (userDoc.get("recentlyPlayed") as? List<Map<String, Any?>> ?: emptyList())
+                        .map { mapToVideoItem(it) }
+                    val favs = (userDoc.get("favorites") as? List<Map<String, Any?>> ?: emptyList())
+                        .map { mapToVideoItem(it) }
+                    val playlists = (userDoc.get("playList") as? List<Map<String, Any?>> ?: emptyList())
+                        .map { mapToVideoItem(it) }
+                    _uiState.value = _uiState.value.copy(
+                        recentlyPlayed = recent,
+                        favorites = favs,
+                        playList = playlists
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to load lists: ${e.message}")
+            }
+        }
+
+    }
+
+
+
+    private fun mapToVideoItem(map: Map<String, Any?>): VideoItem {
+        return VideoItem(
+            videoId = map["videoId"] as? String ?: "",
+            title = map["title"] as? String ?: "",
+            thumbnailUrl = map["thumbnailUrl"] as? String
+        )
+    }
+
+    private fun videoItemToMap(item: VideoItem):Map<String, Any?>{
+        return mapOf(
+            "videoId" to item.videoId ,
+            "title" to item.title,
+            "thumbnailUrl" to item.thumbnailUrl
+        )
+
+    }
+
+    private fun saveListToFirestore(fieldName: String, list: List<VideoItem>) {
+        if (!isLoggedIn()) return
+
+        viewModelScope.launch {
+            try {
+                val userDoc = firestore.collection("users").document(currentUserId!!)
+                val data = mapOf(fieldName to list.map { videoItemToMap(it) })
+                userDoc.set(data, SetOptions.merge()).await()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to save $fieldName: ${e.message}")
+            }
+        }
+    }
 
     fun updateSearch(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query, isLoading = true)
@@ -49,9 +121,10 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                 _uiState.value = _uiState.value.copy(
                     results = items.map {
                         VideoItem(
-                            videoId = extractVideoId(it.url),
+                            videoId = extractVideoId(it.url) ,
                             title = it.name,
                             thumbnailUrl = it.thumbnails.firstOrNull()?.url.toString()
+
                         )
                     },
                     isLoading = false
@@ -63,15 +136,20 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    fun playVideo(videoId: String, playlist: List<VideoItem> = uiState.value.results, index: Int) {
-//        currentPlaylist = playlist
-//        currentIndex = index
-
+    fun playVideo(videoId: String, playlist: List<VideoItem> = uiState.value.results, index: Int,showLoading : Boolean = true ) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true,
-                currentPlaylist = playlist,
-                currentIndex = index
+            if(showLoading) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = true,
+                    currentPlaylist = playlist,
+                    currentIndex = index
                 )
+            }else {
+                _uiState.value = _uiState.value.copy(
+                    currentPlaylist = playlist,
+                    currentIndex = index
+                )
+            }
             try {
                 val audioUrl = getAudioUrl(videoId)
                 if (exoPlayer == null) {
@@ -93,8 +171,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                             _uiState.value = _uiState.value.copy(
                                 isPlaying = isPlaying,
                                 currentVideoId = videoId,
-                                isLoading = state == Player.STATE_BUFFERING
-                            )
+                                isLoading = if (showLoading && !isSeeking && state == Player.STATE_BUFFERING) true else _uiState.value.isLoading                            )
                         }
                     })
                 }
@@ -109,6 +186,16 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                     error = "Failed to load audio: ${e.message}"
                 )
             }
+        }
+    }
+    fun seekTo(position: Long) {
+        isSeeking = true // Set flag before seeking
+        exoPlayer?.seekTo(position)
+        _uiState.value = _uiState.value.copy(isPlaying = exoPlayer?.isPlaying ?: false)
+        viewModelScope.launch {
+            // Reset isSeeking after a short delay to account for buffering
+            delay(500) // Adjust delay if needed
+            isSeeking = false
         }
     }
 
@@ -137,9 +224,9 @@ class MusicViewModel(private val context: Context) : ViewModel() {
 
     fun playNext() {
         val currentIndex = _uiState.value.currentIndex
-        val  currentPlaylist = _uiState.value.currentPlaylist
+        val currentPlaylist = _uiState.value.currentPlaylist
         if (currentIndex < currentPlaylist.size - 1) {
-            playVideo(currentPlaylist[currentIndex + 1].videoId, currentPlaylist, currentIndex + 1)
+            playVideo(currentPlaylist[currentIndex + 1].videoId, currentPlaylist, currentIndex + 1,)
         }
     }
 
@@ -147,7 +234,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         val currentIndex = _uiState.value.currentIndex
         val currentPlaylist = _uiState.value.currentPlaylist
         if (currentIndex > 0) {
-            playVideo(currentPlaylist[currentIndex - 1].videoId, currentPlaylist, currentIndex - 1)
+            playVideo(currentPlaylist[currentIndex - 1].videoId, currentPlaylist, currentIndex - 1,)
         }
     }
 
@@ -206,35 +293,47 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         _uiState.value = _uiState.value.copy(searchQuery = query)
     }
 
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     fun addToRecentlyPlayed(video: VideoItem) {
+        if (!isLoggedIn()) return
         val currentList = _uiState.value.recentlyPlayed.toMutableList()
-        if (!currentList.any { it.videoId == video.videoId }){
-            currentList.add(0,video)
+        if (!currentList.any { it.videoId == video.videoId }) {
+            currentList.add(0, video)
+
+            if(currentList.size > 50) currentList.removeLast()
         }
         _uiState.value = _uiState.value.copy(recentlyPlayed = currentList)
+
+            saveListToFirestore("recentlyPlayed", currentList)
 
     }
 
 
     fun addToFavourites(video: VideoItem) {
+        if (!isLoggedIn()) return
         val currentList = _uiState.value.favorites.toMutableList()
-        if (currentList.any { it.videoId == video.videoId }){
-            currentList.removeAll{it.videoId == video.videoId}
-        }else{
-            currentList.add(0,video)
+        if (currentList.any { it.videoId == video.videoId }) {
+            currentList.removeAll { it.videoId == video.videoId }
+        } else {
+            currentList.add(0, video)
         }
         _uiState.value = _uiState.value.copy(favorites = currentList)
+        saveListToFirestore("favorites", currentList)
 
     }
 
 
-
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     fun addToPlayList(video: VideoItem) {
+        if (!isLoggedIn()) return
         val currentList = _uiState.value.playList.toMutableList()
-        if (!currentList.any { it.videoId == video.videoId }){
-            currentList.add(0,video)
+        if (!currentList.any { it.videoId == video.videoId }) {
+            currentList.add(0, video)
+
+            if(currentList.size >50) currentList.removeLast()
         }
         _uiState.value = _uiState.value.copy(playList = currentList)
+        saveListToFirestore("playList", currentList)
 
     }
 
@@ -242,8 +341,8 @@ class MusicViewModel(private val context: Context) : ViewModel() {
 }
 
 data class UiState(
-    val searchQuery: String = "",
-    val results: List<VideoItem> = emptyList(),
+    var searchQuery: String = "",
+    var results: List<VideoItem> = emptyList(),
     val isPlaying: Boolean = false,
     val currentVideoId: String? = null,
     val isLoading: Boolean = false,
@@ -255,7 +354,7 @@ data class UiState(
     val playList: List<VideoItem> = emptyList(),
 
     val currentPlaylist: List<VideoItem> = emptyList(),
-    val currentIndex: Int = -1
+    val currentIndex: Int = -1,
 )
 
 data class VideoItem(

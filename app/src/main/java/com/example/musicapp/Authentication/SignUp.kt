@@ -205,7 +205,7 @@ fun SignUp(navController: NavController,viewModel: MusicViewModel) {
                                         msg,
                                         Toast.LENGTH_SHORT
                                     ).show()
-                                    navController.navigate("MenuScreen"){
+                                    navController.navigate("MainScreen"){
                                         popUpTo("SignUp"){
                                             inclusive=true
                                         }

@@ -1,7 +1,11 @@
 package com.example.musicapp.Screen
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -16,7 +21,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,7 +33,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -43,8 +49,14 @@ import com.example.musicapp.R
 import com.example.musicapp.VideoItem
 import kotlinx.coroutines.Dispatchers
 
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
-fun MenuScreen(navController: NavController, viewModel: MusicViewModel) {
+fun MenuScreen(
+    navController: NavController,
+    libraryNavController: NavController,
+    viewModel: MusicViewModel
+
+) {
 
     val state by viewModel.uiState.collectAsState()
 //
@@ -54,9 +66,7 @@ fun MenuScreen(navController: NavController, viewModel: MusicViewModel) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .background(
-                brush = Brush.linearGradient(
-                    listOf(Color(0xFF4F08BD), Color(0xFF0D171A))
-                )
+                Color.Black
             )
             .padding(bottom = 60.dp)
 
@@ -64,39 +74,43 @@ fun MenuScreen(navController: NavController, viewModel: MusicViewModel) {
         Spacer(modifier = Modifier.height(20.dp))
         Surface(
             modifier = Modifier
-                .fillMaxWidth(.95f)
-                .clickable { navController.navigate("HomeScreen") }
+                .fillMaxWidth()
+                .padding(start = 10.dp, end = 10.dp)
+                .clickable { navController.navigate("SearchScreen") }
                 .align(Alignment.CenterHorizontally)
-                .height(35.dp),
+                .height(45.dp),
             shape = RoundedCornerShape(20.dp),
-            color = Color(0x979E0BE8)
+            color = Color(0x88574D5A)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
             ) {
                 Icon(
                     imageVector = Icons.Default.Search, contentDescription = null,
-                    modifier = Modifier.padding(top = 7.dp, start = 10.dp),
+                    modifier = Modifier.padding(start = 10.dp),
                     tint = Color.White
                 )
                 Text(
-                    "Search", modifier = Modifier
+                    "Search music", modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 7.dp, start = 10.dp),
+                        .padding(start = 5.dp),
                     color = Color.White
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(30.dp))
+
+
+
         Text(
-            "Recently Played", color = Color.White,
+            "Recent Played", color = Color.White,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(start = 21.dp)
         )
-
-
         LazyRow {
             items(state.recentlyPlayed) {
                 PlayingItem(
@@ -133,6 +147,17 @@ fun MenuScreen(navController: NavController, viewModel: MusicViewModel) {
             }
         }
 
+
+        Box(
+            Modifier.size(22 .dp)
+                .background(Color.Gray)
+                .clickable{
+                    libraryNavController.navigate("PlayList")
+                },
+            contentAlignment = Alignment.Center
+        ){
+            Icon(imageVector =  Icons.Default.PlaylistAdd, contentDescription = null,)
+        }
 
         Spacer(modifier = Modifier.height(30.dp))
         Text(
@@ -197,40 +222,3 @@ fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem
         Spacer(modifier = Modifier.width(12.dp))
     }
 }
-
-//
-//data class Item(
-//    val title: String,
-//    val thumbnail: Int,
-//)
-
-
-//val recentPlayed = remember {
-//        mutableListOf(
-//            Item("YouTube Video", R.drawable.image),
-//            Item("YouTube Video", R.drawable.image),
-//            Item("YouTube Video", R.drawable.image),
-//            Item("YouTube Video", R.drawable.image),
-//
-//            )
-//    }
-//
-//    val favouriteList = remember {
-//        mutableListOf(
-//            Item("YouTube Video", R.drawable.image),
-//            Item("YouTube Video", R.drawable.image),
-//            Item("YouTube Video", R.drawable.image),
-//            Item("YouTube Video", R.drawable.image),
-//
-//            )
-//    }
-//
-//    val playList = remember {
-//        mutableListOf(
-//            Item("YouTube Video", R.drawable.image),
-//            Item("YouTube Video", R.drawable.image),
-//            Item("YouTube Video", R.drawable.image),
-//            Item("YouTube Video", R.drawable.image),
-//
-//            )
-//    }

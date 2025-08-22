@@ -30,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -49,6 +50,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -81,38 +84,39 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
             ), containerColor = Color.Transparent, topBar = {
             TopAppBar(
                 title = {
-                Text(
-                    "NOW PLAYING",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
-            }, navigationIcon = {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = "Back",
-                    modifier = Modifier.size(50.dp),
-                    tint = Color.White
-                )
-            }, actions = {
-                IconButton(onClick = {
-                    val currentVideo = state.currentPlaylist.getOrNull(state.currentIndex)
-                    if (currentVideo != null) {
-                        viewModel.addToFavourites(currentVideo)
-                    }
-                }) {
-                    val currentVideo = state.currentPlaylist.getOrNull(state.currentIndex)
-                    val isFavorite = currentVideo != null && state.favorites.any { it.videoId == currentVideo.videoId }
-
+                    Text(
+                        "NOW PLAYING",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }, navigationIcon = {
                     Icon(
-                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favourite",
-                        modifier = Modifier.size(40.dp),
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Back",
+                        modifier = Modifier.size(50.dp),
                         tint = Color.White
                     )
-                }
-            }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                }, actions = {
+                    IconButton(onClick = {
+                        val currentVideo = state.currentPlaylist.getOrNull(state.currentIndex)
+                        if (currentVideo != null) {
+                            viewModel.addToFavourites(currentVideo)
+                        }
+                    }) {
+                        val currentVideo = state.currentPlaylist.getOrNull(state.currentIndex)
+                        val isFavorite =
+                            currentVideo != null && state.favorites.any { it.videoId == currentVideo.videoId }
+
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favourite",
+                            modifier = Modifier.size(40.dp),
+                            tint = Color.White
+                        )
+                    }
+                }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         }) { innerPadding ->
         Column(
@@ -156,20 +160,34 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                     while (viewModel.exoPlayer != null) {
                         progress = (viewModel.exoPlayer?.currentPosition?.toFloat()
                             ?: 0f) / (viewModel.exoPlayer?.duration?.toFloat() ?: 1f)
-                        delay(1000)
+                        delay(100)
                     }
                 }
-                Slider(
-                    value = progress,
-                    onValueChange = { newValue ->
-                        viewModel.exoPlayer?.seekTo(
-                            (newValue * (viewModel.exoPlayer?.duration ?: 1L)).toLong()
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth(.9f)
+                    Slider(
+                        value = progress,
+                        onValueChange = { newValue ->
+                            viewModel.seekTo(
+                                (newValue * (viewModel.exoPlayer?.duration ?: 1L)).toLong()
+                            )
+                            progress = newValue
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
                         .align(Alignment.CenterHorizontally),
-                    interactionSource = remember { MutableInteractionSource() })
+                        thumb = {
+                            SliderDefaults.Thumb(
+                                interactionSource = remember { MutableInteractionSource() },
+                                thumbSize = DpSize(10.dp, 10.dp), // circle ka size
+                                colors = SliderDefaults.colors(
+                                    thumbColor = Color.White
+                                )
+                            )
+                        },
+                        colors = SliderDefaults.colors(
+                            activeTrackColor = Color.Green,
+                            inactiveTrackColor = Color.Gray
+                        )
+                    )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth(.9f)
@@ -238,3 +256,39 @@ fun formatTime(milliseconds: Long): String {
     return String.format("%02d:%02d", minutes, seconds)
 }
 
+@Preview(showBackground = true)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun abc(modifier: Modifier = Modifier) {
+
+    var progress by remember { mutableStateOf(0f) }
+
+
+    Slider(
+        value = progress,
+        onValueChange = {
+            progress = it
+        },
+        modifier = Modifier
+            .fillMaxWidth(1f)
+//                        .align(Alignment.CenterHorizontally)
+        ,
+        thumb = {
+            SliderDefaults.Thumb(
+                interactionSource = remember { MutableInteractionSource() },
+                thumbSize = DpSize(5.dp, 16.dp),
+                modifier= Modifier.background(Color.Transparent, CircleShape),
+
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.White
+                ),
+                enabled = true,
+            )
+        },
+        colors = SliderDefaults.colors(
+            activeTrackColor = Color.Green,
+            inactiveTrackColor = Color.Gray
+        )
+    )
+
+}

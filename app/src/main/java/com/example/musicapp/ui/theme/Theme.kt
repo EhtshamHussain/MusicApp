@@ -1,6 +1,5 @@
 package com.example.musicapp.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -9,7 +8,9 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -50,9 +51,20 @@ fun MusicAppTheme(
         else -> LightColorScheme
     }
 
+
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
         content = content
     )
+    val systemUiController = rememberSystemUiController()
+    if(isSystemInDarkTheme()){
+        systemUiController.setSystemBarsColor(Color.Black)
+        systemUiController.setNavigationBarColor(Color(0xFF1D1C1C))
+    }
+    else{
+        systemUiController.setSystemBarsColor(Color.Black)
+        systemUiController.setNavigationBarColor(Color(0xFF1D1C1C))
+    }
 }
+
