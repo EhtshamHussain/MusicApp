@@ -27,7 +27,6 @@ class MainActivity : ComponentActivity() {
             MusicAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavigationScreen(modifier = Modifier.padding(innerPadding))
-
                 }
             }
 

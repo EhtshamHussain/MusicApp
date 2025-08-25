@@ -3,6 +3,7 @@ package com.example.musicapp.Screen
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,9 +21,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FeaturedVideo
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryAdd
@@ -39,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,8 +54,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -81,43 +89,45 @@ fun MenuScreen(
     Scaffold(
         modifier = Modifier.fillMaxWidth(),
         topBar = {
-         TopAppBar(
-             modifier = Modifier.fillMaxWidth(),
-             title = {
-             Text("Library", color = Color.White)
-             },
-             actions = {
-                 Icon(imageVector = Icons.Default.History, contentDescription = null ,
-                     tint = Color.White,
-                     modifier = Modifier.size(40.dp)
-                         .padding(end=10.dp)
-                         .clickable {
+            TopAppBar(
+                modifier = Modifier.fillMaxWidth(),
+                title = {
+                    Text("Library", color = Color.White)
+                },
+                actions = {
+                    Icon(
+                        imageVector = Icons.Default.History, contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(end = 10.dp)
+                            .clickable {
 //                             viewModel.selecteTab.value=1
-                             libraryNavController.navigate("HistoryScreen")
-                         }
+                                libraryNavController.navigate("HistoryScreen")
+                            }
 
-                 )
+                    )
 
-                 Icon(imageVector = Icons.Default.Search , contentDescription = null ,
-                     tint = Color.White,
-                     modifier = Modifier.size(40.dp)
-                         .padding(end=10.dp)
-                         .clickable { navController.navigate("SearchScreen") }
+                    Icon(
+                        imageVector = Icons.Default.Search, contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(end = 10.dp)
+                            .clickable { navController.navigate("SearchScreen") }
 
-                 )
-             },
-
-
-             colors = TopAppBarDefaults.topAppBarColors(
-                 containerColor = Color.Transparent,
-             ),
+                    )
+                },
 
 
-         )
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                ),
+
+
+                )
         }
     ) { innerPadding ->
-
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -131,85 +141,228 @@ fun MenuScreen(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            Spacer(modifier = Modifier.height(30.dp))
-
-
-
-            Text(
-                "Recent Played", color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 21.dp)
-            )
-            LazyRow {
-                items(state.recentlyPlayed) {
-                    PlayingItem(
-                        it.videoId,
-                        it.title,
-                        it.thumbnailUrl ?: ""
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 18.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { libraryNavController.navigate("Favourite") },
+                        Modifier
+                            .size(60.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(color = Color(0xFF2196F3))
                     ) {
-                        val index = state.recentlyPlayed.indexOf(it)
-                        viewModel.playVideo(it.videoId, state.recentlyPlayed, index)
-                        navController.navigate("PlayerScreen")
+                        Icon(
+                            imageVector = Icons.Default.Favorite, // 👈 built-in Like icon
+                            contentDescription = "Play Lists",
+                            tint = Color.Blue, // color change kar sakte ho
+                            modifier = Modifier.size(35.dp)
+                        )
                     }
+                    Spacer(Modifier.width(8.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable {
+                                libraryNavController.navigate("Favourite")
+                            },
+                    ) {
+                        Text(
+                            "Liked Music", color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                        )
+                        Text("Auto playlist", color = Color(0xFFC7ABAB))
+                    }
+
                 }
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
-            Text(
-                "Favourite", color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 21.dp)
-            )
-
-
-            LazyRow {
-                items(state.favorites) {
-                    PlayingItem(
-                        it.videoId, it.title, it.thumbnailUrl ?: ""
-                    ) {
-                        val index = state.favorites.indexOf(it)
-                        viewModel.playVideo(it.videoId, state.favorites, index)
-                        viewModel.addToRecentlyPlayed(it)
-                        navController.navigate("PlayerScreen")
-                    }
-                }
-            }
-
+            Spacer(modifier = Modifier.height(20.dp))
 
             Box(
-                Modifier
-                    .size(75.dp)
-                    .background(color = Color.Gray)
-                    .clickable {
-                        libraryNavController.navigate("PlayList")
-                    },
-                contentAlignment = Alignment.Center
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 18.dp),
             ) {
-                Icon(imageVector = Icons.Default.FavoriteBorder, contentDescription = null)
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { libraryNavController.navigate("PlayList") },
+                        Modifier
+                            .size(60.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(color = Color(0xFF2196F3))
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.PlaylistAdd, // 👈 built-in Like icon
+                            contentDescription = "Play Lists",
+                            tint = Color.Blue, // color change kar sakte ho
+                            modifier = Modifier.size(35.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(5.dp))
+                    Text("Play Lists", color = Color.White,
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable{
+                                libraryNavController.navigate("PLayList")
+                            },
+                        )
+                }
             }
 
 
-            Spacer(modifier = Modifier.height(30.dp))
+
+
+
+
+
+
+//            Text(
+//                "Recent Played", color = Color.White,
+//                fontSize = 24.sp,
+//                fontWeight = FontWeight.Bold,
+//                modifier = Modifier.padding(start = 21.dp)
+//            )
+//            LazyRow {
+//                items(state.recentlyPlayed) {
+//                    PlayingItem(
+//                        it.videoId,
+//                        it.title,
+//                        it.thumbnailUrl ?: ""
+//                    ) {
+//                        val index = state.recentlyPlayed.indexOf(it)
+//                        viewModel.playVideo(it.videoId, state.recentlyPlayed, index)
+//                        navController.navigate("PlayerScreen")
+//                    }
+//                }
+//            }
+
+//            Spacer(modifier = Modifier.height(30.dp))
+//            Text(
+//                "Favourite", color = Color.White,
+//                fontSize = 24.sp,
+//                fontWeight = FontWeight.Bold,
+//                modifier = Modifier.padding(start = 21.dp)
+//            )
+//
+//
+//            LazyRow {
+//                items(state.favorites) {
+//                    PlayingItem(
+//                        it.videoId, it.title, it.thumbnailUrl ?: ""
+//                    ) {
+//                        val index = state.favorites.indexOf(it)
+//                        viewModel.playVideo(it.videoId, state.favorites, index)
+//                        viewModel.addToRecentlyPlayed(it)
+//                        navController.navigate("PlayerScreen")
+//                    }
+//                }
+//            }
+
+//
+//            Box(
+//                Modifier
+//                    .size(75.dp)
+//                    .background(color = Color.Gray)
+//                    .clickable {
+//                        libraryNavController.navigate("PlayList")
+//                    },
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Icon(imageVector = Icons.Default.FavoriteBorder, contentDescription = null)
+//            }
+
+
+//            Spacer(modifier = Modifier.height(30.dp))
+//            Text(
+//                "PlayList", color = Color.White,
+//                fontSize = 24.sp,
+//                fontWeight = FontWeight.Bold,
+//                modifier = Modifier.padding(start = 21.dp)
+//            )
+//
+//
+//            LazyRow() {
+//                items(state.playList) {
+//                    PlayingItem(it.videoId, it.title, it.thumbnailUrl ?: "") { video ->
+//                        val index = state.playList.indexOf(video)
+//                        viewModel.playVideo(video.videoId, state.playList, index)
+//                        viewModel.addToRecentlyPlayed(video)
+//                        navController.navigate("PlayerScreen")
+//
+//                    }
+//                }
+//            }
+
+
+        }
+    }
+}
+
+@Composable
+fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem) -> Unit) {
+
+    var expanded by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 10.dp)
+            .clickable { onClick(VideoItem(id, title, thumnail)) },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(thumnail)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            placeholder = painterResource(R.drawable.imageloader),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .width(100.dp)
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(8.dp))
+        )
+
+        Spacer(
+            modifier = Modifier
+                .width(10.dp)
+                .height(82.dp)
+        )
+
+        Column(
+            modifier = Modifier.weight(1f) // text ke liye jagah
+        ) {
             Text(
-                "PlayList", color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 21.dp)
+                text = title,
+                fontSize = 14.sp,
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
+        }
 
 
-            LazyRow() {
-                items(state.playList) {
-                    PlayingItem(it.videoId, it.title, it.thumbnailUrl ?: "") { video ->
-                        val index = state.playList.indexOf(video)
-                        viewModel.playVideo(video.videoId, state.playList, index)
-                        viewModel.addToRecentlyPlayed(video)
-                        navController.navigate("PlayerScreen")
-
-                    }
-                }
+        Box(
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            IconButton(onClick = { expanded = !expanded }) {
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = "More options",
+                    tint = Color.White
+                )
             }
 
 
@@ -217,87 +370,3 @@ fun MenuScreen(
     }
 }
 
-    @Composable
-    fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem) -> Unit) {
-
-        var expanded by remember { mutableStateOf(false) }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 10.dp)
-                .clickable { onClick(VideoItem(id, title, thumnail)) },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(thumnail)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = null,
-                placeholder = painterResource(R.drawable.imageloader),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(100.dp)
-                    .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(8.dp))
-            )
-
-            Spacer(
-                modifier = Modifier
-                    .width(10.dp)
-                    .height(82.dp)
-            )
-
-            Column(
-                modifier = Modifier.weight(1f) // text ke liye jagah
-            ) {
-                Text(
-                    text = title,
-                    fontSize = 14.sp,
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-
-            Box(
-                                        modifier = Modifier
-                                            .padding(16.dp)
-            ) {
-                IconButton(onClick = { expanded = !expanded }) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "More options",
-                        tint = Color.White
-                    )
-                }
-
-
-            }
-        }
-    }
-
-//
-//@Preview( )
-//@Composable
-//fun box(modifier: Modifier = Modifier) {
-//Column ( Modifier
-//    .fillMaxSize()
-//    .background(Color.Black),
-//    verticalArrangement = Arrangement.Center,
-//    horizontalAlignment = Alignment.CenterHorizontally){
-//    Box(
-//        Modifier
-//            .size(75.dp)
-//            .background(color = Color.Gray)
-//            .clickable {
-//            },
-//        contentAlignment = Alignment.Center
-//    ) {
-//        Icon(imageVector = Icons.Default.FavoriteBorder, contentDescription = null)
-//    }
-//}
-//
-//
-//}

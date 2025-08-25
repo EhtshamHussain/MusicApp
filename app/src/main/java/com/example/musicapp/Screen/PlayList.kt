@@ -8,14 +8,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.musicapp.MusicViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayList(
     navController: NavController,
@@ -33,19 +42,15 @@ fun PlayList(
 
 ) {
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
+    val state by viewModel.uiState.collectAsState()
+    Scaffold(
+        modifier = Modifier.fillMaxWidth(),
+        topBar = {
+            TopAppBar(
+                modifier = Modifier.fillMaxWidth(),
+                title = {},
+                navigationIcon = {
+                    Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
                 tint = Color.White,
@@ -53,13 +58,44 @@ fun PlayList(
                     .clickable { libraryNavController.popBackStack() }
                     .padding(end = 16.dp)
             )
-            Text(
-                text = "Your Playlists",
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+                },
+                actions = {
+                    Icon(imageVector = Icons.Default.Search , contentDescription = null ,
+                        tint = Color.White,
+                        modifier = Modifier.size(40.dp)
+                            .padding(end=10.dp)
+                            .clickable { navController.navigate("SearchScreen") }
 
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                ),
+
+
+                )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = Color.Black),
+//            verticalArrangement = Arrangement.Center,
+//            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            LazyColumn(modifier = Modifier.padding(innerPadding)) {
+                items(state.playList) {
+                    PlayingItem(
+                        it.videoId,
+                        it.title,
+                        it.thumbnailUrl ?: ""
+                    ) {
+                        val index = state.recentlyPlayed.indexOf(it)
+                        viewModel.playVideo(it.videoId, state.recentlyPlayed, index)
+                        navController.navigate("PlayerScreen")
+                    }
+                }
+            }
+        }
     }
 }

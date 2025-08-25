@@ -105,6 +105,7 @@ fun MainScreen(navController: NavController, viewModel: MusicViewModel) {
             composable("PlayList") { PlayList(navController, bottomNavController, viewModel) }
             composable("SettingScreen") { SettingScreen() }
             composable("HistoryScreen") { HistoryScreen(navController ,bottomNavController , viewModel) }
+            composable("Favourite") { Favourite(navController ,bottomNavController , viewModel) }
         }
 
     }

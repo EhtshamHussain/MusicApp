@@ -50,6 +50,8 @@ fun NavigationScreen(modifier: Modifier) {
             SignUp(navController, viewModel)
         }
 
+
+
     }
 }
 

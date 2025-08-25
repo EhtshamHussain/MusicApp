@@ -1,6 +1,7 @@
 package com.example.musicapp
 
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -42,12 +43,10 @@ class MusicViewModel(private val context: Context) : ViewModel() {
     private val currentUserId: String? get() = auth.currentUser?.uid
 
 
-
-
     var exoPlayer: ExoPlayer? = null
 
     init {
-        if(isLoggedIn()){
+        if (isLoggedIn()) {
             loadListsFromFirestore()
         }
     }
@@ -59,16 +58,14 @@ class MusicViewModel(private val context: Context) : ViewModel() {
             try {
                 val userDoc = firestore.collection("users").document(currentUserId!!).get().await()
                 if (userDoc.exists()) {
-                    val recent = (userDoc.get("recentlyPlayed") as? List<Map<String, Any?>> ?: emptyList())
-                        .map { mapToVideoItem(it) }
-                    val favs = (userDoc.get("favorites") as? List<Map<String, Any?>> ?: emptyList())
-                        .map { mapToVideoItem(it) }
-                    val playlists = (userDoc.get("playList") as? List<Map<String, Any?>> ?: emptyList())
-                        .map { mapToVideoItem(it) }
+                    val recent = (userDoc.get("recentlyPlayed") as? List<Map<String, Any?>>
+                        ?: emptyList()).map { mapToVideoItem(it) }
+                    val favs = (userDoc.get("favorites") as? List<Map<String, Any?>>
+                        ?: emptyList()).map { mapToVideoItem(it) }
+                    val playlists = (userDoc.get("playList") as? List<Map<String, Any?>>
+                        ?: emptyList()).map { mapToVideoItem(it) }
                     _uiState.value = _uiState.value.copy(
-                        recentlyPlayed = recent,
-                        favorites = favs,
-                        playList = playlists
+                        recentlyPlayed = recent, favorites = favs, playList = playlists
                     )
                 }
             } catch (e: Exception) {
@@ -79,7 +76,6 @@ class MusicViewModel(private val context: Context) : ViewModel() {
     }
 
 
-
     private fun mapToVideoItem(map: Map<String, Any?>): VideoItem {
         return VideoItem(
             videoId = map["videoId"] as? String ?: "",
@@ -88,11 +84,9 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         )
     }
 
-    private fun videoItemToMap(item: VideoItem):Map<String, Any?>{
+    private fun videoItemToMap(item: VideoItem): Map<String, Any?> {
         return mapOf(
-            "videoId" to item.videoId ,
-            "title" to item.title,
-            "thumbnailUrl" to item.thumbnailUrl
+            "videoId" to item.videoId, "title" to item.title, "thumbnailUrl" to item.thumbnailUrl
         )
 
     }
@@ -106,7 +100,8 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                 val data = mapOf(fieldName to list.map { videoItemToMap(it) })
                 userDoc.set(data, SetOptions.merge()).await()
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to save $fieldName: ${e.message}")
+                _uiState.value =
+                    _uiState.value.copy(error = "Failed to save $fieldName: ${e.message}")
             }
         }
     }
@@ -121,13 +116,12 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                 _uiState.value = _uiState.value.copy(
                     results = items.map {
                         VideoItem(
-                            videoId = extractVideoId(it.url) ,
+                            videoId = extractVideoId(it.url),
                             title = it.name,
                             thumbnailUrl = it.thumbnails.firstOrNull()?.url.toString()
 
                         )
-                    },
-                    isLoading = false
+                    }, isLoading = false
 
                 )
             } catch (e: Exception) {
@@ -136,18 +130,20 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    fun playVideo(videoId: String, playlist: List<VideoItem> = uiState.value.results, index: Int,showLoading : Boolean = true ) {
+    fun playVideo(
+        videoId: String,
+        playlist: List<VideoItem> = uiState.value.results,
+        index: Int,
+        showLoading: Boolean = true
+    ) {
         viewModelScope.launch {
-            if(showLoading) {
+            if (showLoading) {
                 _uiState.value = _uiState.value.copy(
-                    isLoading = true,
-                    currentPlaylist = playlist,
-                    currentIndex = index
+                    isLoading = true, currentPlaylist = playlist, currentIndex = index
                 )
-            }else {
+            } else {
                 _uiState.value = _uiState.value.copy(
-                    currentPlaylist = playlist,
-                    currentIndex = index
+                    currentPlaylist = playlist, currentIndex = index
                 )
             }
             try {
@@ -171,23 +167,22 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                             _uiState.value = _uiState.value.copy(
                                 isPlaying = isPlaying,
                                 currentVideoId = videoId,
-                                isLoading = if (showLoading && !isSeeking && state == Player.STATE_BUFFERING) true else _uiState.value.isLoading                            )
+                                isLoading = if (showLoading && !isSeeking && state == Player.STATE_BUFFERING) true else _uiState.value.isLoading
+                            )
                         }
                     })
                 }
                 _uiState.value = _uiState.value.copy(
-                    isPlaying = true,
-                    currentVideoId = videoId,
-                    isLoading = false
+                    isPlaying = true, currentVideoId = videoId, isLoading = false
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Failed to load audio: ${e.message}"
+                    isLoading = false, error = "Failed to load audio: ${e.message}"
                 )
             }
         }
     }
+
     fun seekTo(position: Long) {
         isSeeking = true // Set flag before seeking
         exoPlayer?.seekTo(position)
@@ -226,7 +221,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         val currentIndex = _uiState.value.currentIndex
         val currentPlaylist = _uiState.value.currentPlaylist
         if (currentIndex < currentPlaylist.size - 1) {
-            playVideo(currentPlaylist[currentIndex + 1].videoId, currentPlaylist, currentIndex + 1,)
+            playVideo(currentPlaylist[currentIndex + 1].videoId, currentPlaylist, currentIndex + 1)
         }
     }
 
@@ -234,7 +229,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         val currentIndex = _uiState.value.currentIndex
         val currentPlaylist = _uiState.value.currentPlaylist
         if (currentIndex > 0) {
-            playVideo(currentPlaylist[currentIndex - 1].videoId, currentPlaylist, currentIndex - 1,)
+            playVideo(currentPlaylist[currentIndex - 1].videoId, currentPlaylist, currentIndex - 1)
         }
     }
 
@@ -262,8 +257,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
             result(false, "Enter valid email & min 6-char password")
             return
         }
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener {
+        auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener {
                 result(it.isSuccessful, "SignIn Successfully")
             }
 
@@ -276,8 +270,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
             result(false, "Enter valid email & min 6-char password")
             return
         }
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener {
+        auth.signInWithEmailAndPassword(email, password).addOnCompleteListener {
                 result(it.isSuccessful, "LogIn Successfully")
             }
     }
@@ -293,6 +286,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         _uiState.value = _uiState.value.copy(searchQuery = query)
     }
 
+    @SuppressLint("SuspiciousIndentation")
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     fun addToRecentlyPlayed(video: VideoItem) {
         if (!isLoggedIn()) return
@@ -300,11 +294,11 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         if (!currentList.any { it.videoId == video.videoId }) {
             currentList.add(0, video)
 
-            if(currentList.size > 50) currentList.removeLast()
+            if (currentList.size > 50) currentList.removeLast()
         }
         _uiState.value = _uiState.value.copy(recentlyPlayed = currentList)
 
-            saveListToFirestore("recentlyPlayed", currentList)
+        saveListToFirestore("recentlyPlayed", currentList)
 
     }
 
@@ -330,7 +324,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         if (!currentList.any { it.videoId == video.videoId }) {
             currentList.add(0, video)
 
-            if(currentList.size >50) currentList.removeLast()
+            if (currentList.size > 50) currentList.removeLast()
         }
         _uiState.value = _uiState.value.copy(playList = currentList)
         saveListToFirestore("playList", currentList)

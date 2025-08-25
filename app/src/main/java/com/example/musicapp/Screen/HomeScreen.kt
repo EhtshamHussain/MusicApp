@@ -18,6 +18,6 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Home Screen"  , color = Color.White)
+        Text("Home Screen "  , color = Color.White)
     }
 }
