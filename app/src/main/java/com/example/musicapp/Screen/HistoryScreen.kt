@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -72,6 +73,17 @@ fun HistoryScreen(
                 title = {
                     Text("History ", color = Color.White)
                 },
+                navigationIcon = {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .clickable { libraryNavController.popBackStack() }
+                            .padding(end = 16.dp)
+                    )
+                },
+
                 actions = {
                     Icon(imageVector = Icons.Default.Search , contentDescription = null ,
                         tint = Color.White,

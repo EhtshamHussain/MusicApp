@@ -21,6 +21,6 @@ fun SettingScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-//        BottomSheetScaffold()
+
     }
 }

@@ -31,6 +31,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState
+
     private var isSeeking = false // New flag to track seeking
 
     //navBar Tab
