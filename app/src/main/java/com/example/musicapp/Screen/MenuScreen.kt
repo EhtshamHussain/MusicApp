@@ -1,9 +1,7 @@
 package com.example.musicapp.Screen
 
 import android.os.Build
-import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,33 +16,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FeaturedVideo
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,14 +44,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -72,7 +59,11 @@ import coil.request.ImageRequest
 import com.example.musicapp.MusicViewModel
 import com.example.musicapp.R
 import com.example.musicapp.VideoItem
-import kotlinx.coroutines.Dispatchers
+import com.example.musicapp.ui.theme.BottomBarColorYouTubeDark
+import com.example.musicapp.ui.theme.DarkBackground
+import com.example.musicapp.ui.theme.DarkOnBackground
+import com.example.musicapp.ui.theme.DarkOnPrimary
+import com.example.musicapp.ui.theme.DarkPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -81,10 +72,9 @@ fun MenuScreen(
     navController: NavController,
     libraryNavController: NavController,
     viewModel: MusicViewModel,
-
     ) {
-
     val state by viewModel.uiState.collectAsState()
+    var openDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxWidth(),
@@ -92,12 +82,12 @@ fun MenuScreen(
             TopAppBar(
                 modifier = Modifier.fillMaxWidth(),
                 title = {
-                    Text("Library", color = Color.White)
+                    Text("Library", color = MaterialTheme.colorScheme.onBackground)
                 },
                 actions = {
                     Icon(
                         imageVector = Icons.Default.History, contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .size(40.dp)
                             .padding(end = 10.dp)
@@ -110,7 +100,7 @@ fun MenuScreen(
 
                     Icon(
                         imageVector = Icons.Default.Search, contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .size(40.dp)
                             .padding(end = 10.dp)
@@ -133,7 +123,7 @@ fun MenuScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .background(
-                    Color.Black
+                    MaterialTheme.colorScheme.background
                 )
                 .padding(bottom = 60.dp)
                 .padding(innerPadding)
@@ -160,25 +150,26 @@ fun MenuScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Favorite, // 👈 built-in Like icon
-                            contentDescription = "Play Lists",
+                            contentDescription = "Favorite ",
                             tint = Color.Blue, // color change kar sakte ho
                             modifier = Modifier.size(35.dp)
                         )
                     }
                     Spacer(Modifier.width(8.dp))
                     Column(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
                             .clickable {
                                 libraryNavController.navigate("Favourite")
                             },
                     ) {
                         Text(
-                            "Liked Music", color = Color.White,
+                            "Liked Music", color =MaterialTheme.colorScheme.onBackground,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             modifier = Modifier
                         )
-                        Text("Auto playlist", color = Color(0xFFC7ABAB))
+                        Text("Auto playlist", color = DarkOnPrimary)
                     }
 
                 }
@@ -211,98 +202,47 @@ fun MenuScreen(
                         )
                     }
                     Spacer(Modifier.width(5.dp))
-                    Text("Play Lists", color = Color.White,
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable{
+                    Text("Play Lists", color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
                                 libraryNavController.navigate("PLayList")
                             },
                         )
                 }
             }
 
+            Surface(
+                modifier = Modifier
+                    .width(120.dp)
+                    .clickable {
+                        openDialog=true
+                    }
+                    .padding(end = 18.dp)
+                    .height(40.dp)
+                    .align(Alignment.End),
+                color = MaterialTheme.colorScheme.onBackground,
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp ),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = DarkOnPrimary,
+                        modifier = Modifier.size(30.dp)
+                    )
+                    Text("New", color = DarkPrimary, fontSize = 15.sp)
+                }
+            }
+                if(openDialog){
+                    DialogBox(
+                        onClose = { openDialog = false }
+                    )
 
-
-
-
-
-
-
-//            Text(
-//                "Recent Played", color = Color.White,
-//                fontSize = 24.sp,
-//                fontWeight = FontWeight.Bold,
-//                modifier = Modifier.padding(start = 21.dp)
-//            )
-//            LazyRow {
-//                items(state.recentlyPlayed) {
-//                    PlayingItem(
-//                        it.videoId,
-//                        it.title,
-//                        it.thumbnailUrl ?: ""
-//                    ) {
-//                        val index = state.recentlyPlayed.indexOf(it)
-//                        viewModel.playVideo(it.videoId, state.recentlyPlayed, index)
-//                        navController.navigate("PlayerScreen")
-//                    }
-//                }
-//            }
-
-//            Spacer(modifier = Modifier.height(30.dp))
-//            Text(
-//                "Favourite", color = Color.White,
-//                fontSize = 24.sp,
-//                fontWeight = FontWeight.Bold,
-//                modifier = Modifier.padding(start = 21.dp)
-//            )
-//
-//
-//            LazyRow {
-//                items(state.favorites) {
-//                    PlayingItem(
-//                        it.videoId, it.title, it.thumbnailUrl ?: ""
-//                    ) {
-//                        val index = state.favorites.indexOf(it)
-//                        viewModel.playVideo(it.videoId, state.favorites, index)
-//                        viewModel.addToRecentlyPlayed(it)
-//                        navController.navigate("PlayerScreen")
-//                    }
-//                }
-//            }
-
-//
-//            Box(
-//                Modifier
-//                    .size(75.dp)
-//                    .background(color = Color.Gray)
-//                    .clickable {
-//                        libraryNavController.navigate("PlayList")
-//                    },
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Icon(imageVector = Icons.Default.FavoriteBorder, contentDescription = null)
-//            }
-
-
-//            Spacer(modifier = Modifier.height(30.dp))
-//            Text(
-//                "PlayList", color = Color.White,
-//                fontSize = 24.sp,
-//                fontWeight = FontWeight.Bold,
-//                modifier = Modifier.padding(start = 21.dp)
-//            )
-//
-//
-//            LazyRow() {
-//                items(state.playList) {
-//                    PlayingItem(it.videoId, it.title, it.thumbnailUrl ?: "") { video ->
-//                        val index = state.playList.indexOf(video)
-//                        viewModel.playVideo(video.videoId, state.playList, index)
-//                        viewModel.addToRecentlyPlayed(video)
-//                        navController.navigate("PlayerScreen")
-//
-//                    }
-//                }
-//            }
+                }
 
 
         }
@@ -346,7 +286,7 @@ fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem
             Text(
                 text = title,
                 fontSize = 14.sp,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -361,12 +301,12 @@ fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem
                 Icon(
                     Icons.Default.MoreVert,
                     contentDescription = "More options",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
-
-
         }
     }
 }
+
+
 

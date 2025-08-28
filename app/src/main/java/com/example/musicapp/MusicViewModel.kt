@@ -5,9 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -44,13 +42,30 @@ class MusicViewModel(private val context: Context) : ViewModel() {
     private val currentUserId: String? get() = auth.currentUser?.uid
 
 
+//    var progress  by   mutableStateOf(0f)
+private val _progress = MutableStateFlow(0f)
+    val progress: StateFlow<Float> = _progress
     var exoPlayer: ExoPlayer? = null
 
     init {
         if (isLoggedIn()) {
             loadListsFromFirestore()
         }
+
+        viewModelScope.launch {
+            while (true) {
+                exoPlayer?.let {
+                    val pos = it.currentPosition.toFloat()
+                    val dur = it.duration.takeIf { d -> d > 0 }?.toFloat() ?: 1f
+                    _progress.value = pos / dur
+                } ?: run {
+                    _progress.value = 0f
+                }
+                delay(100)
+            }
+        }
     }
+
 
     private fun loadListsFromFirestore() {
         if (!isLoggedIn()) return
@@ -65,9 +80,13 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                         ?: emptyList()).map { mapToVideoItem(it) }
                     val playlists = (userDoc.get("playList") as? List<Map<String, Any?>>
                         ?: emptyList()).map { mapToVideoItem(it) }
+                    val disLiked = (userDoc.get("disLiked") as? List<Map<String, Any?>>
+                        ?: emptyList()).map { mapToVideoItem(it) }
+
                     _uiState.value = _uiState.value.copy(
-                        recentlyPlayed = recent, favorites = favs, playList = playlists
+                        recentlyPlayed = recent, favorites = favs, playList = playlists, disLiked = disLiked
                     )
+
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Failed to load lists: ${e.message}")
@@ -147,6 +166,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                     currentPlaylist = playlist, currentIndex = index
                 )
             }
+//            _progress.value = 0f
             try {
                 val audioUrl = getAudioUrl(videoId)
                 if (exoPlayer == null) {
@@ -187,6 +207,9 @@ class MusicViewModel(private val context: Context) : ViewModel() {
     fun seekTo(position: Long) {
         isSeeking = true // Set flag before seeking
         exoPlayer?.seekTo(position)
+//        exoPlayer?.duration?.let { duration ->
+//            if (duration > 0) _progress.value = position.toFloat() / duration.toFloat()
+//        }
         _uiState.value = _uiState.value.copy(isPlaying = exoPlayer?.isPlaying ?: false)
         viewModelScope.launch {
             // Reset isSeeking after a short delay to account for buffering
@@ -303,16 +326,39 @@ class MusicViewModel(private val context: Context) : ViewModel() {
 
     }
 
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    fun addToDisLiked(video: VideoItem){
+        if(!isLoggedIn()) return
+        val currentList = _uiState.value.disLiked.toMutableList()
+        val favList = _uiState.value.favorites.toMutableList()
+            if(favList.any{it.videoId == video.videoId}){
+                favList.removeAll { it.videoId == video.videoId }
+            }
+        if (currentList.any { it.videoId == video.videoId }  ) {
+            currentList.removeAll { it.videoId == video.videoId }
+        } else {
+            currentList.add(0, video)
+        }
+        _uiState.value = _uiState.value.copy(disLiked = currentList, favorites = favList)
+        saveListToFirestore("disLiked",currentList)
+        saveListToFirestore("favorites",currentList)
+    }
+
 
     fun addToFavourites(video: VideoItem) {
         if (!isLoggedIn()) return
         val currentList = _uiState.value.favorites.toMutableList()
+
+        val dislike = _uiState.value.disLiked.toMutableList()
+        if(dislike.any{it.videoId == video.videoId}){
+            dislike.removeAll { it.videoId == video.videoId }
+        }
         if (currentList.any { it.videoId == video.videoId }) {
             currentList.removeAll { it.videoId == video.videoId }
         } else {
             currentList.add(0, video)
         }
-        _uiState.value = _uiState.value.copy(favorites = currentList)
+        _uiState.value = _uiState.value.copy(favorites = currentList, disLiked = dislike)
         saveListToFirestore("favorites", currentList)
 
     }
@@ -347,6 +393,8 @@ data class UiState(
     val recentlyPlayed: List<VideoItem> = emptyList(),
     val favorites: List<VideoItem> = emptyList(),
     val playList: List<VideoItem> = emptyList(),
+    val disLiked: List<VideoItem> = emptyList(),
+
 
     val currentPlaylist: List<VideoItem> = emptyList(),
     val currentIndex: Int = -1,

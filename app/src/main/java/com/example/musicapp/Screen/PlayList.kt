@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -51,19 +52,21 @@ fun PlayList(
                 title = {},
                 navigationIcon = {
                     Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White,
-                modifier = Modifier
-                    .clickable { libraryNavController.popBackStack() }
-                    .padding(end = 16.dp)
-            )
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier
+                            .clickable { libraryNavController.popBackStack() }
+                            .padding(end = 16.dp)
+                    )
                 },
                 actions = {
-                    Icon(imageVector = Icons.Default.Search , contentDescription = null ,
+                    Icon(
+                        imageVector = Icons.Default.Search, contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(40.dp)
-                            .padding(end=10.dp)
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(end = 10.dp)
                             .clickable { navController.navigate("SearchScreen") }
 
                     )
@@ -79,7 +82,7 @@ fun PlayList(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = Color.Black),
+                .background(color = MaterialTheme.colorScheme.background),
 //            verticalArrangement = Arrangement.Center,
 //            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -90,8 +93,8 @@ fun PlayList(
                         it.title,
                         it.thumbnailUrl ?: ""
                     ) {
-                        val index = state.recentlyPlayed.indexOf(it)
-                        viewModel.playVideo(it.videoId, state.recentlyPlayed, index)
+                        val index = state.playList.indexOf(it)
+                        viewModel.playVideo(it.videoId, state.playList, index)
                         navController.navigate("PlayerScreen")
                     }
                 }

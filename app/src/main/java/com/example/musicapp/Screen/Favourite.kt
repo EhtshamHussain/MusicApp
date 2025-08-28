@@ -72,8 +72,6 @@ fun Favourite(
             modifier = Modifier
                 .fillMaxSize()
                 .background(color = Color.Black),
-//            verticalArrangement = Arrangement.Center,
-//            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             LazyColumn(modifier = Modifier.padding(innerPadding)) {
                 items(state.favorites) {
@@ -82,8 +80,8 @@ fun Favourite(
                         it.title,
                         it.thumbnailUrl ?: ""
                     ) {
-                        val index = state.recentlyPlayed.indexOf(it)
-                        viewModel.playVideo(it.videoId, state.recentlyPlayed, index)
+                        val index = state.favorites.indexOf(it)
+                        viewModel.playVideo(it.videoId, state.favorites, index)
                         navController.navigate("PlayerScreen")
                     }
                 }

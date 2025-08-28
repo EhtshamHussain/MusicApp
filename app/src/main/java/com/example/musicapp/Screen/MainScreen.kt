@@ -10,6 +10,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,6 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.musicapp.MusicViewModel
 import com.example.musicapp.Model.navigationItem
+import com.example.musicapp.ui.theme.BottomBarColorYouTubeDark
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
@@ -49,7 +51,7 @@ fun MainScreen(navController: NavController, viewModel: MusicViewModel) {
                 }
 
 
-                NavigationBar(containerColor = Color(0xFF1D1C1C)) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     navigationItem.forEachIndexed { index, item ->
                         NavigationBarItem(
                             selected = selectedIndex.value == index,
@@ -95,9 +97,9 @@ fun MainScreen(navController: NavController, viewModel: MusicViewModel) {
                             },
                             alwaysShowLabel = true,
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color.White,
+                                selectedIconColor = MaterialTheme.colorScheme.onBackground,
                                 unselectedIconColor = Color.Gray,
-                                selectedTextColor = Color.White,
+                                selectedTextColor = MaterialTheme.colorScheme.onBackground,
                                 unselectedTextColor = Color.Gray,
                                 indicatorColor = Color(0x902E4144)
                             )
