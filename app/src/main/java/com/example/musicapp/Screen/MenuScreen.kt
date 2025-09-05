@@ -50,18 +50,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.musicapp.Model.VideoItem
 import com.example.musicapp.MusicViewModel
 import com.example.musicapp.R
-import com.example.musicapp.VideoItem
-import com.example.musicapp.ui.theme.BottomBarColorYouTubeDark
-import com.example.musicapp.ui.theme.DarkBackground
-import com.example.musicapp.ui.theme.DarkOnBackground
 import com.example.musicapp.ui.theme.DarkOnPrimary
 import com.example.musicapp.ui.theme.DarkPrimary
 
@@ -121,12 +117,14 @@ fun MenuScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
+
+
                 .verticalScroll(rememberScrollState())
                 .background(
                     MaterialTheme.colorScheme.background
                 )
-                .padding(bottom = 60.dp)
-                .padding(innerPadding)
+//                .padding(bottom = 60.dp)
 
         ) {
             Spacer(modifier = Modifier.height(20.dp))
@@ -177,41 +175,55 @@ fun MenuScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 18.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.Start,
-                    verticalAlignment = Alignment.CenterVertically
+
+
+            // dynamic playlists
+            state.playlists.forEach { playlist ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 18.dp),
                 ) {
-                    IconButton(
-                        onClick = { libraryNavController.navigate("PlayList") },
-                        Modifier
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(color = Color(0xFF2196F3))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.PlaylistAdd, // 👈 built-in Like icon
-                            contentDescription = "Play Lists",
-                            tint = Color.Blue, // color change kar sakte ho
-                            modifier = Modifier.size(35.dp)
-                        )
+                        IconButton(
+                            onClick = { libraryNavController.navigate("PlaylistDetail/${playlist.id}") },  // assume new screen
+                            Modifier
+                                .size(60.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(color = Color(0xFF2196F3))
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,  // default playlist icon
+                                contentDescription = "Playlist ${playlist.name}",
+                                tint = Color.White,
+                                modifier = Modifier.size(35.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { libraryNavController.navigate("PlaylistDetail/${playlist.id}") },
+                        ) {
+                            Text(
+                                playlist.name, color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                            Text(playlist.description, color = DarkOnPrimary)
+                        }
                     }
-                    Spacer(Modifier.width(5.dp))
-                    Text("Play Lists", color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                libraryNavController.navigate("PLayList")
-                            },
-                        )
                 }
+                Spacer(modifier = Modifier.height(20.dp))
             }
 
+
+
+            Spacer(modifier = Modifier.height(20.dp))
             Surface(
                 modifier = Modifier
                     .width(120.dp)
@@ -239,7 +251,14 @@ fun MenuScreen(
             }
                 if(openDialog){
                     DialogBox(
-                        onClose = { openDialog = false }
+                        onClose = { openDialog = false },
+                        onCreate = {name, description ->
+                            val created =viewModel.createPlaylist(name ,description)
+                            if(created !=null){
+
+                            libraryNavController.navigate("PlaylistDetail/${created.id}")
+                            }
+                        }
                     )
 
                 }
@@ -250,9 +269,8 @@ fun MenuScreen(
 }
 
 @Composable
-fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem) -> Unit) {
+fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem) -> Unit,onOpen: ()->Unit ) {
 
-    var expanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -297,7 +315,9 @@ fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem
             modifier = Modifier
                 .padding(16.dp)
         ) {
-            IconButton(onClick = { expanded = !expanded }) {
+            IconButton(
+                onClick = {onOpen()}
+            ) {
                 Icon(
                     Icons.Default.MoreVert,
                     contentDescription = "More options",
@@ -307,6 +327,5 @@ fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem
         }
     }
 }
-
 
 

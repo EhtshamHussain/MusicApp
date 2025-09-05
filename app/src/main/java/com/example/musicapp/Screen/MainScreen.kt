@@ -17,24 +17,28 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.musicapp.MusicViewModel
 import com.example.musicapp.Model.navigationItem
 import com.example.musicapp.ui.theme.BottomBarColorYouTubeDark
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
-fun MainScreen(navController: NavController, viewModel: MusicViewModel) {
+fun MainScreen(navController: NavController,  viewModel: MusicViewModel) {
     val selectedIndex = viewModel.selecteTab
     val bottomNavController = rememberNavController()
+//    val bottomNavController = bottomNavController
 
     val navBackStackEntry = bottomNavController.currentBackStackEntryAsState()
     val currentDestination  = navBackStackEntry.value?.destination?.route
 
     LaunchedEffect(currentDestination ) {
+
         when (currentDestination) {
             "HomeScreen" -> viewModel.selecteTab.value = 0
             "MenuScreen" -> viewModel.selecteTab.value = 1
@@ -114,12 +118,29 @@ fun MainScreen(navController: NavController, viewModel: MusicViewModel) {
             startDestination = "HomeScreen",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("HomeScreen") { HomeScreen() }
+            composable("HomeScreen") { HomeScreen(navController , bottomNavController) }
             composable("MenuScreen") { MenuScreen(navController, bottomNavController, viewModel) }
-            composable("PlayList") { PlayList(navController, bottomNavController, viewModel) }
+
             composable("SettingScreen") { SettingScreen() }
             composable("HistoryScreen") { HistoryScreen(navController ,bottomNavController , viewModel) }
             composable("Favourite") { Favourite(navController ,bottomNavController , viewModel) }
+
+            composable(
+                route = "PlaylistDetail/{playlistId}",
+                arguments = listOf(navArgument("playlistId"){type = NavType.StringType})
+
+
+            ) { navBackStackEntry->
+                val playlistId = navBackStackEntry.arguments?.getString("playlistId") ?: ""
+                PlaylistDetailScreen(
+                    navController = navController,
+                    bottomNavController = bottomNavController,
+                    viewModel = viewModel,
+                    playlistId = playlistId
+                )
+            }
+
+
         }
 
     }

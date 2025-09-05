@@ -1,9 +1,11 @@
 package com.example.musicapp.Screen
 
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,11 +35,13 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.QueuePlayNext
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbDownOffAlt
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.ThumbUpOffAlt
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
@@ -51,6 +55,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -75,6 +80,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -83,12 +89,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.musicapp.DownloadMusic.DownloadAudioButton
+import com.example.musicapp.Model.VideoItem
 import com.example.musicapp.MusicViewModel
+import com.example.musicapp.NewPipe.getAudioUrl
 import com.example.musicapp.R
 import com.example.musicapp.SharedPreferences.SearchPrefManager
-import com.example.musicapp.VideoItem
 import com.example.musicapp.ui.theme.DarkBackground
 import com.example.musicapp.ui.theme.DarkOnPrimary
+import com.example.musicapp.ui.theme.DarkPrimary
 import kotlinx.coroutines.Dispatchers
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -101,6 +110,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val manager = remember { SearchPrefManager(context) }
+
 
     var selectedItem by remember { mutableStateOf<VideoItem?>(null) }
 
@@ -260,16 +270,20 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(82.dp)
-                                .clickable {
-                                    val index = state.results.indexOf(video)
-                                    viewModel.playVideo(
-                                        video.videoId,
-                                        state.results,
-                                        index
-                                    )
-                                    viewModel.addToRecentlyPlayed(video)
-                                    navController.navigate("PlayerScreen")
-                                }
+                                .combinedClickable(
+                                    onClick = {
+                                        val index = state.results.indexOf(video)
+                                        viewModel.playVideo(
+                                            video.videoId,
+                                            state.results,
+                                            index
+                                        )
+                                        viewModel.addToRecentlyPlayed(video)
+                                        navController.navigate("PlayerScreen")
+
+                                    },
+                                    onLongClick = { showBottomSheet.value = true }
+                                )
                                 .padding(8.dp)
                         ) {
                             if (video.thumbnailUrl != null) {
@@ -305,10 +319,13 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                                         )
                                     }
 
-                                    IconButton(onClick = {
+                                    IconButton(
+                                        onClick = {
                                         showBottomSheet.value = true
                                         selectedItem = video
-                                    }) {
+                                    }
+
+                                    ) {
                                         Icon(
                                             Icons.Default.MoreVert,
                                             contentDescription = "More options",
@@ -322,7 +339,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                     }
                 }
                 if (showBottomSheet.value) {
-                    MusicSheet(viewModel, showBottomSheet, selectedItem)
+                    MusicSheet(viewModel,navController, showBottomSheet, selectedItem)
                 }
 
 
@@ -336,6 +353,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
 @Composable
 fun MusicSheet(
     viewModel: MusicViewModel,
+    navController: NavController,
     showBottomSheet: MutableState<Boolean>,
     selectedItem: VideoItem? = VideoItem("", "", ""),
 
@@ -466,8 +484,6 @@ fun MusicSheetContent(
                 FilledIconButton(
 
                     onClick = {
-                        viewModel.addToPlayList(video)
-//                        onclick()
                         showPlayListContent()
                     },
                     modifier = Modifier
@@ -524,146 +540,164 @@ fun MusicSheetContent(
                     lineHeight = 13.sp
                 )
 
-            }
 
+
+            }
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        DownloadAudioButton(context , video.title, video)
+
+
+        TextButton(
+            onClick = {
+                viewModel.playNext(video)
+                Toast.makeText(context, "Will play next", Toast.LENGTH_SHORT).show()
+                onclick()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(53.dp),
+            colors = ButtonDefaults.textButtonColors(
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onBackground,
+            )
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.QueuePlayNext, // icon for "play next"
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Play Next",
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
-fun PlayListContent(video: VideoItem,viewModel: MusicViewModel, onClose: () -> Unit) {
+fun PlayListContent(video: VideoItem, viewModel: MusicViewModel, onClose: () -> Unit) {
+    val state by viewModel.uiState.collectAsState()
+    var openNewDialog by remember { mutableStateOf(false) }
+    if (openNewDialog) {
+        DialogBox(
+            onClose = { openNewDialog = false },
+            onCreate = {name, description ->
+                val created =viewModel.createPlaylist(name ,description)
+                if(created !=null){
+                    viewModel.addToSpecificPlaylist(created.id , video)
+
+//                    navController.navigate("PlaylistDetail/${created.id}")
+                }
+            }
+        )
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(15.dp)
             .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.Center,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-
-                },
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
-
         ) {
-            Text(
-                "Save 1 music to playlist",
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 16.sp,
-            )
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.clickable { onClose() }
-            )
+            Text("Save to playlist", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
+            Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.clickable { onClose() })
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(12.dp))
         HorizontalDivider()
-        Spacer(modifier = Modifier.height(12.dp))
-
-
+        Spacer(Modifier.height(12.dp))
+        // Liked Music
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
                     viewModel.addToFavourites(video)
+                    onClose()
                 },
-            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = {  viewModel.addToFavourites(video) },
+                onClick = { /* handled in row */ },
                 Modifier
-                    .size(30.dp)
+                    .size(60.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(color = DarkOnPrimary)
+                    .background(Color(0xFF2196F3))
             ) {
-                Icon(
-                    imageVector = Icons.Default.ThumbUp, // 👈 built-in Like icon
-                    contentDescription = "Favorite ",
-                    tint = Color.White, // color change kar sakte ho
-                    modifier = Modifier.size(35.dp)
-                )
+                Icon(Icons.Default.Favorite, null, tint = Color.Blue, modifier = Modifier.size(35.dp))
             }
-            Spacer(Modifier.width(18.dp))
-            Column(
+            Spacer(Modifier.width(8.dp))
+            Column {
+                Text("Liked Music", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("${state.favorites.size} tracks", color = DarkOnPrimary)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        // dynamic playlists
+        state.playlists.forEach { playlist ->
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        viewModel.addToFavourites(video)
-                    },
+                        viewModel.addToSpecificPlaylist(playlist.id, video)
+                        onClose()
+                    }
+                   ,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "Liked Music", color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.PushPin, contentDescription = null,
-                        tint = DarkOnPrimary,
-                        modifier = Modifier
-                            .size(25.dp)
-                            .padding(end = 5.dp),
-                        )
-                Text("Auto playlist", color = DarkOnPrimary)
+                IconButton(
+                    onClick = { /* handled in row */ },
+                    Modifier
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFF2196F3))
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.PlaylistAdd, null, tint = Color.Blue, modifier = Modifier.size(35.dp))
+                }
+                Spacer(Modifier.width(8.dp))
+                Column {
+                    Text(playlist.name, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text( "${playlist.videos.size } tracks" , color = DarkOnPrimary)
                 }
             }
-
-
+            Spacer(Modifier.height(12.dp))
         }
-
+// New button
         Surface(
-            modifier = Modifier.width(110.dp)
+            modifier = Modifier
+                .width(120.dp)
                 .height(40.dp)
-                .align(Alignment.End),
+                .align(Alignment.End)
+                .clickable { openNewDialog = true },
             color = MaterialTheme.colorScheme.onBackground,
             shape = RoundedCornerShape(24.dp)
         ) {
-            Row(modifier = Modifier.fillMaxWidth()
-                .padding(5.dp),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp),
                 horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = DarkBackground,
-                    modifier = Modifier.size(24.dp)
-                )
-                Text("New", color = DarkBackground, fontSize = 20.sp)
-            }
-        }
-
-
-    }
-}
-//@Preview(showBackground = true)
-@Composable
-fun text() {
-    Column(modifier= Modifier.fillMaxSize()
-        .background(color = DarkOnPrimary),verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,) {
-        Surface(
-            modifier = Modifier.width(120.dp)
-                .height(50.dp),
-            contentColor = MaterialTheme.colorScheme.onBackground,
-            shape = RoundedCornerShape(24.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
-            Row(modifier = Modifier.fillMaxWidth()
-                .padding(10.dp),
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically) {
-               Icon(imageVector = Icons.Default.Add,
-                   contentDescription = null,
-                   tint = DarkBackground,
-                   modifier = Modifier.size(34.dp)
-               )
-                Text("New", color = DarkBackground, fontSize = 24.sp)
+                Icon(Icons.Default.Add, null, tint = DarkOnPrimary, modifier = Modifier.size(30.dp))
+                Text("New", color = DarkPrimary, fontSize = 15.sp)
             }
         }
     }
 }
+

@@ -118,10 +118,11 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                         val isFavorite = currentVideo != null && state.favorites.any { it.videoId == currentVideo.videoId }
 
                         Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            imageVector = if (isFavorite) Icons.Default.Favorite else
+                                Icons.Default.FavoriteBorder,
                             contentDescription = "Favourite",
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.onBackground
+                            modifier = Modifier.size(32.dp),
+                            tint = if(isFavorite) Color(0xFFFA5B02) else MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)

@@ -12,6 +12,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicapp.ExoPlayer.playAudio
+import com.example.musicapp.Model.Playlist
+import com.example.musicapp.Model.VideoItem
 import com.example.musicapp.NewPipe.getAudioUrl
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -24,6 +26,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
+import org.schabi.newpipe.extractor.timeago.patterns.pl
+import java.util.UUID
 
 class MusicViewModel(private val context: Context) : ViewModel() {
 
@@ -42,8 +46,8 @@ class MusicViewModel(private val context: Context) : ViewModel() {
     private val currentUserId: String? get() = auth.currentUser?.uid
 
 
-//    var progress  by   mutableStateOf(0f)
-private val _progress = MutableStateFlow(0f)
+    //    var progress  by   mutableStateOf(0f)
+    private val _progress = MutableStateFlow(0f)
     val progress: StateFlow<Float> = _progress
     var exoPlayer: ExoPlayer? = null
 
@@ -78,13 +82,27 @@ private val _progress = MutableStateFlow(0f)
                         ?: emptyList()).map { mapToVideoItem(it) }
                     val favs = (userDoc.get("favorites") as? List<Map<String, Any?>>
                         ?: emptyList()).map { mapToVideoItem(it) }
-                    val playlists = (userDoc.get("playList") as? List<Map<String, Any?>>
-                        ?: emptyList()).map { mapToVideoItem(it) }
+//                    val playlists = (userDoc.get("playList") as? List<Map<String, Any?>>
+//                        ?: emptyList()).map { mapToVideoItem(it) }
+
                     val disLiked = (userDoc.get("disLiked") as? List<Map<String, Any?>>
                         ?: emptyList()).map { mapToVideoItem(it) }
 
+                    val playlists = (userDoc.get("playlists") as? List<Map<String, Any?>>
+                        ?: emptyList()).map { mapToPlaylist(it) }.sortedBy { it.name.lowercase() }
+
                     _uiState.value = _uiState.value.copy(
-                        recentlyPlayed = recent, favorites = favs, playList = playlists, disLiked = disLiked
+                        recentlyPlayed = recent,
+                        favorites = favs,
+                        disLiked = disLiked,
+                        playlists = playlists  // add this
+                    )
+
+                    _uiState.value = _uiState.value.copy(
+                        recentlyPlayed = recent,
+                        favorites = favs,
+                        playlists = playlists,
+                        disLiked = disLiked
                     )
 
                 }
@@ -95,6 +113,24 @@ private val _progress = MutableStateFlow(0f)
 
     }
 
+    private fun mapToPlaylist(map: Map<String, Any?>): Playlist {
+        return Playlist(
+            id = map["id"] as? String ?: UUID.randomUUID().toString(),
+            name = map["name"] as? String ?: "",
+            description = map["description"] as? String ?: "",
+            videos = (map["videos"] as? List<Map<String, Any?>>
+                ?: emptyList()).map { mapToVideoItem(it) }
+        )
+    }
+
+    private fun playlistToMap(playlist: Playlist): Map<String, Any?> {
+        return mapOf(
+            "id" to playlist.id,
+            "name" to playlist.name,
+            "description" to playlist.description,
+            "videos" to playlist.videos.map { videoItemToMap(it) }
+        )
+    }
 
     private fun mapToVideoItem(map: Map<String, Any?>): VideoItem {
         return VideoItem(
@@ -103,6 +139,7 @@ private val _progress = MutableStateFlow(0f)
             thumbnailUrl = map["thumbnailUrl"] as? String
         )
     }
+
 
     private fun videoItemToMap(item: VideoItem): Map<String, Any?> {
         return mapOf(
@@ -118,6 +155,7 @@ private val _progress = MutableStateFlow(0f)
             try {
                 val userDoc = firestore.collection("users").document(currentUserId!!)
                 val data = mapOf(fieldName to list.map { videoItemToMap(it) })
+//                val data = mapOf(fieldName to list)
                 userDoc.set(data, SetOptions.merge()).await()
             } catch (e: Exception) {
                 _uiState.value =
@@ -125,6 +163,7 @@ private val _progress = MutableStateFlow(0f)
             }
         }
     }
+
 
     fun updateSearch(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query, isLoading = true)
@@ -282,8 +321,8 @@ private val _progress = MutableStateFlow(0f)
             return
         }
         auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener {
-                result(it.isSuccessful, "SignIn Successfully")
-            }
+            result(it.isSuccessful, "SignIn Successfully")
+        }
 
     }
 
@@ -295,8 +334,8 @@ private val _progress = MutableStateFlow(0f)
             return
         }
         auth.signInWithEmailAndPassword(email, password).addOnCompleteListener {
-                result(it.isSuccessful, "LogIn Successfully")
-            }
+            result(it.isSuccessful, "LogIn Successfully")
+        }
     }
 
     fun isLoggedIn(): Boolean = auth.currentUser != null
@@ -327,21 +366,21 @@ private val _progress = MutableStateFlow(0f)
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    fun addToDisLiked(video: VideoItem){
-        if(!isLoggedIn()) return
+    fun addToDisLiked(video: VideoItem) {
+        if (!isLoggedIn()) return
         val currentList = _uiState.value.disLiked.toMutableList()
         val favList = _uiState.value.favorites.toMutableList()
-            if(favList.any{it.videoId == video.videoId}){
-                favList.removeAll { it.videoId == video.videoId }
-            }
-        if (currentList.any { it.videoId == video.videoId }  ) {
+        if (favList.any { it.videoId == video.videoId }) {
+            favList.removeAll { it.videoId == video.videoId }
+        }
+        if (currentList.any { it.videoId == video.videoId }) {
             currentList.removeAll { it.videoId == video.videoId }
         } else {
             currentList.add(0, video)
         }
         _uiState.value = _uiState.value.copy(disLiked = currentList, favorites = favList)
-        saveListToFirestore("disLiked",currentList)
-        saveListToFirestore("favorites",currentList)
+        saveListToFirestore("disLiked", currentList)
+        saveListToFirestore("favorites", currentList)
     }
 
 
@@ -350,7 +389,7 @@ private val _progress = MutableStateFlow(0f)
         val currentList = _uiState.value.favorites.toMutableList()
 
         val dislike = _uiState.value.disLiked.toMutableList()
-        if(dislike.any{it.videoId == video.videoId}){
+        if (dislike.any { it.videoId == video.videoId }) {
             dislike.removeAll { it.videoId == video.videoId }
         }
         if (currentList.any { it.videoId == video.videoId }) {
@@ -364,22 +403,114 @@ private val _progress = MutableStateFlow(0f)
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    fun addToPlayList(video: VideoItem) {
+//    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+//    fun addToPlayList(video: VideoItem) {
+//        if (!isLoggedIn()) return
+//        val currentList = _uiState.value.playList.toMutableList()
+//        if (!currentList.any { it.videoId == video.videoId }) {
+//            currentList.add(0, video)
+//
+//            if (currentList.size > 50) currentList.removeLast()
+//        }
+//        _uiState.value = _uiState.value.copy(playList = currentList)
+//        saveListToFirestore("playList", currentList)
+//
+//    }
+
+    fun createPlaylist(
+        name: String,
+        description: String,
+        videoToAdd: VideoItem? = null
+    ): Playlist? {
+        if (!isLoggedIn() || name.isBlank() || description.isBlank()) return null// validate not empty
+
+        val currentPlaylists = _uiState.value.playlists.toMutableList()
+        if (currentPlaylists.any { it.name == name }) return null // avoid duplicate names
+
+        val newVideos = if (videoToAdd != null) listOf(videoToAdd) else emptyList()
+        val newPlaylist = Playlist(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = description,
+            videos = newVideos
+        )
+        currentPlaylists.add(newPlaylist)
+        currentPlaylists.sortBy { it.name.lowercase() }  // sort alphabetically
+
+        _uiState.value = _uiState.value.copy(playlists = currentPlaylists)
+
+        savePlaylistsToFirestore(currentPlaylists)
+        return newPlaylist
+    }
+
+    private fun savePlaylistsToFirestore(playlists: List<Playlist>) {
         if (!isLoggedIn()) return
-        val currentList = _uiState.value.playList.toMutableList()
-        if (!currentList.any { it.videoId == video.videoId }) {
-            currentList.add(0, video)
-
-            if (currentList.size > 50) currentList.removeLast()
+        viewModelScope.launch {
+            try {
+                val userDoc = firestore.collection("users").document(currentUserId!!)
+                val data = mapOf("playlists" to playlists.map { playlistToMap(it) })
+                userDoc.set(data, SetOptions.merge()).await()
+            } catch (e: Exception) {
+                _uiState.value =
+                    _uiState.value.copy(error = "Failed to save playlists: ${e.message}")
+            }
         }
-        _uiState.value = _uiState.value.copy(playList = currentList)
-        saveListToFirestore("playList", currentList)
+    }
 
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    fun addToSpecificPlaylist(playlistId: String, video: VideoItem) {
+        if (!isLoggedIn()) return
+
+        val currentPlaylists = _uiState.value.playlists.toMutableList()
+        val playlistIndex = currentPlaylists.indexOfFirst { it.id == playlistId }
+        if (playlistIndex == -1) return
+
+        val updatedVideos = currentPlaylists[playlistIndex].videos.toMutableList()
+        if (!updatedVideos.any { it.videoId == video.videoId }) {
+            updatedVideos.add(0, video)  // add at top
+            if (updatedVideos.size > 50) updatedVideos.removeLast()  // limit to 50 for performance
+        }
+
+        val updatedPlaylist = currentPlaylists[playlistIndex].copy(videos = updatedVideos)
+        currentPlaylists[playlistIndex] = updatedPlaylist
+
+        _uiState.value = _uiState.value.copy(playlists = currentPlaylists)
+
+        savePlaylistsToFirestore(currentPlaylists)
+    }
+    fun removeFromSpecificPlaylist(playlistId: String, video: VideoItem) {
+        val updatedPlaylists = _uiState.value.playlists.map { playlist ->
+            if (playlist.id == playlistId) {
+                playlist.copy(videos = playlist.videos - video) // 👈 video remove
+            } else playlist
+        }
+
+        _uiState.value = _uiState.value.copy(
+            playlists = updatedPlaylists
+        )
+        savePlaylistsToFirestore(updatedPlaylists)
+    }
+
+    fun playNext(video: VideoItem) {
+        val currentPlaylist = _uiState.value.currentPlaylist.toMutableList()
+        val currentIndex = _uiState.value.currentIndex
+
+        currentPlaylist.removeAll { it.videoId == video.videoId }
+
+        // Insert just after current index
+        val insertIndex = if (currentIndex >= 0 && currentIndex < currentPlaylist.size) {
+            currentIndex + 1
+        } else {
+            currentPlaylist.size
+        }
+        currentPlaylist.add(insertIndex, video)
+
+        _uiState.value = _uiState.value.copy(currentPlaylist = currentPlaylist)
     }
 
 
 }
+
 
 data class UiState(
     var searchQuery: String = "",
@@ -392,7 +523,9 @@ data class UiState(
     // New lists for your features
     val recentlyPlayed: List<VideoItem> = emptyList(),
     val favorites: List<VideoItem> = emptyList(),
-    val playList: List<VideoItem> = emptyList(),
+//    val playList: List<VideoItem> = emptyList(),
+    val playlists: List<Playlist> = emptyList(),
+
     val disLiked: List<VideoItem> = emptyList(),
 
 
@@ -400,10 +533,5 @@ data class UiState(
     val currentIndex: Int = -1,
 )
 
-data class VideoItem(
-    val videoId: String,
-    val title: String,
-    val thumbnailUrl: String? = null,
-)
 
 

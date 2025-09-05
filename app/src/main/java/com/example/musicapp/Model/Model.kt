@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import java.util.UUID
 
 data class NavigationItem(
     val title: String,
@@ -31,5 +32,16 @@ val navigationItem = listOf(
     )
 
 
+)
+data class VideoItem(
+    val videoId: String,
+    val title: String,
+    val thumbnailUrl: String? = null,
+)
 
+data class Playlist(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String,
+    val description: String,
+    val videos: List<VideoItem> = emptyList()
 )

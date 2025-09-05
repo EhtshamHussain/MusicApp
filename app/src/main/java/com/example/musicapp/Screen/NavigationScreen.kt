@@ -28,7 +28,8 @@ fun NavigationScreen(modifier: Modifier) {
             SplashScreen(navController, viewModel)
         }
         composable("MainScreen") {
-            MainScreen(navController, viewModel)
+            MainScreen(navController,
+                viewModel)
         }
         composable("SearchScreen") {
             MusicPlayerScreen(

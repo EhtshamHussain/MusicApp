@@ -14,19 +14,13 @@ import androidx.navigation.NavController
 import com.example.musicapp.MusicViewModel
 import com.example.musicapp.R
 import kotlinx.coroutines.delay
-
-
 @Composable
 fun SplashScreen(navController: NavController, viewModel: MusicViewModel) {
-
-
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-
         Image(
             painter = painterResource(R.drawable.musicimage),
             contentDescription = null,
@@ -34,7 +28,6 @@ fun SplashScreen(navController: NavController, viewModel: MusicViewModel) {
             contentScale = ContentScale.FillHeight,
             modifier = Modifier.fillMaxSize(),
         )
-
         LaunchedEffect(Unit) {
             delay(3000)
             if (viewModel.isLoggedIn()) {
@@ -54,8 +47,5 @@ fun SplashScreen(navController: NavController, viewModel: MusicViewModel) {
                 }
             }
         }
-
-
     }
-
 }

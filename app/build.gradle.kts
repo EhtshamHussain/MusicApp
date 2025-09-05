@@ -76,8 +76,6 @@ dependencies {
         exclude(group = "com.google.protobuf", module = "protobuf-javalite")
     }
 
-
-
     // ExoPlayer (Media3)
     implementation ("androidx.media3:media3-exoplayer:1.3.1")
     implementation ("androidx.media3:media3-ui:1.3.1")

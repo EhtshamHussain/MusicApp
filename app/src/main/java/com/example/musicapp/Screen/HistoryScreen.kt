@@ -22,6 +22,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,7 @@ fun HistoryScreen(
     libraryNavController: NavController,
     viewModel: MusicViewModel
 ) {
+    val bottomSheet = remember {mutableStateOf(false)  }
 
     val state by viewModel.uiState.collectAsState()
     Scaffold(
@@ -86,15 +89,19 @@ fun HistoryScreen(
                     PlayingItem(
                         it.videoId,
                         it.title,
-                        it.thumbnailUrl ?: ""
-                    ) {
-                        val index = state.recentlyPlayed.indexOf(it)
-                        viewModel.playVideo(it.videoId, state.recentlyPlayed, index)
-                        navController.navigate("PlayerScreen")
-                    }
+                        it.thumbnailUrl ?: "",
+                        onClick = {
+
+                            val index = state.recentlyPlayed.indexOf(it)
+                            viewModel.playVideo(it.videoId, state.recentlyPlayed, index)
+                            navController.navigate("PlayerScreen")
+                        },
+                        onOpen = {bottomSheet}
+                    )
                 }
             }
-        }
     }
 }
+}
+
 
