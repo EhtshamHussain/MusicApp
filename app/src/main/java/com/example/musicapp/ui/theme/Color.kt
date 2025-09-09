@@ -20,6 +20,7 @@ val LightOnBackground = Color(0xFF252323)
 val DarkPrimary = Color(0xFF343434)
 
 val DarkOnPrimary = Color(0xFF6B5C5C)
+val darkPrimaryVariant = Color(0xFF988383)
 val DarkBackground = Color(0xFF101010)
 
 //val BottomBarColorYouTubeDark = Color(0xFF212121)

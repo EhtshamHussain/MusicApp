@@ -118,7 +118,7 @@ fun MainScreen(navController: NavController,  viewModel: MusicViewModel) {
             startDestination = "HomeScreen",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("HomeScreen") { HomeScreen(navController , bottomNavController) }
+            composable("HomeScreen") { HomeScreen(navController , bottomNavController,viewModel) }
             composable("MenuScreen") { MenuScreen(navController, bottomNavController, viewModel) }
 
             composable("SettingScreen") { SettingScreen() }

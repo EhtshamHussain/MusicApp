@@ -1,17 +1,30 @@
 package com.example.musicapp.Screen
 
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,6 +44,7 @@ import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,49 +53,127 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.musicapp.Model.NavigationItem
+import com.example.musicapp.MusicViewModel
+import com.example.musicapp.R
+import com.example.musicapp.SpeedDialor.RecentInteractionsSection
 import com.example.musicapp.ui.theme.BottomBarColorYouTubeDark
 import com.example.musicapp.ui.theme.DarkOnBackground
 import com.example.musicapp.ui.theme.DarkOnPrimary
 import com.example.musicapp.ui.theme.MusicAppTheme
 
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController , bottomNavController: NavController) {
+fun HomeScreen(navController: NavController , bottomNavController: NavController,
+               viewModel: MusicViewModel) {
+    val state by viewModel.uiState.collectAsState()
     Scaffold(
-       modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         topBar = {
             TopAppBar(
-             title = {
-                 Text("HomeScreen" , color = MaterialTheme.colorScheme.onBackground,
-                     fontSize = 16.sp)
-             },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 5.dp , end = 5.dp),
+                modifier = Modifier.fillMaxWidth(),
+                title = {
+                    Text("Home Screen", color = MaterialTheme.colorScheme.onBackground)
+                },
                 actions = {
-                    Icon(imageVector = Icons.Default.Search , contentDescription = "Search",
+                    Icon(
+                        imageVector = Icons.Default.Search, contentDescription = null,
                         tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(end = 10.dp)
+                            .clickable { navController.navigate("SearchScreen") }
                     )
                 },
+
+
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.Transparent,
+                ),
+
+
                 )
-            )
         }
     ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            item {
+                RecentInteractionsSection(
+                    items = state.recentInteractions,
+                    onPlayVideo = { videoItem ->
+                        val singlePlaylist = listOf(videoItem)
+                        val index = 0
+                        viewModel.playVideo(videoItem.videoId, singlePlaylist, index)
+                        viewModel.addRecentVideo(videoItem)
+                        navController.navigate("PlayerScreen")
+                    },
+                    onOpenPlaylist = { playlist ->
+                        bottomNavController.navigate("PlaylistDetail/${playlist.id}")
+                        viewModel.addRecentPlaylist(playlist)
+                    }
+                )
+            }
+            item {
+                Spacer(modifier = Modifier.padding(top = 22.dp))
+                Text(
+                    "Top Singers ",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 10.dp)
+                )
+                Spacer(modifier = Modifier.padding(top = 22.dp))
 
-        Text("ksdjlfajk" , modifier = Modifier.padding(innerPadding))
+                Column {
+                    Image(painter = painterResource(R.drawable.image),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxWidth()
+                            .height(333.dp))
+                }
+
+            }
+        }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @Composable
 fun DialogBox(
     onClose: () -> Unit,
@@ -157,3 +249,4 @@ fun DialogBox(
         }
     }
 }
+

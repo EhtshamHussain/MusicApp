@@ -4,6 +4,7 @@ package com.example.musicapp
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -15,6 +16,7 @@ import com.example.musicapp.ExoPlayer.playAudio
 import com.example.musicapp.Model.Playlist
 import com.example.musicapp.Model.VideoItem
 import com.example.musicapp.NewPipe.getAudioUrl
+import com.example.musicapp.SpeedDialor.RecentItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -91,18 +93,35 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                     val playlists = (userDoc.get("playlists") as? List<Map<String, Any?>>
                         ?: emptyList()).map { mapToPlaylist(it) }.sortedBy { it.name.lowercase() }
 
-                    _uiState.value = _uiState.value.copy(
-                        recentlyPlayed = recent,
-                        favorites = favs,
-                        disLiked = disLiked,
-                        playlists = playlists  // add this
-                    )
+                    val recentPlaylistAndVieoItem =
+                        (userDoc.get("recentInteractions") as? List<Map<String, Any?>>
+                        ?: emptyList()).mapNotNull {map->
+                            when(map["type"]){
+                                "playlist" ->{ RecentItem.RecentPlaylist(mapToPlaylist(map))}
+                                "video" -> {RecentItem.RecentVideo(mapToVideoItem(map))}
+                                else -> null
+                            }
+                        }
+
+
+//                    val recentPlaylists = (userDoc.get("recentlyUsedPlaylists") as? List<Map<String, Any?>>
+//                        ?: emptyList()).map { mapToPlaylist(it) }
+
+
+//                    _uiState.value = _uiState.value.copy(
+//                        recentlyPlayed = recent,
+//                        favorites = favs,
+//                        disLiked = disLiked,
+//                        playlists = playlists
+//                    )
 
                     _uiState.value = _uiState.value.copy(
                         recentlyPlayed = recent,
                         favorites = favs,
                         playlists = playlists,
-                        disLiked = disLiked
+                        disLiked = disLiked,
+                        recentInteractions = recentPlaylistAndVieoItem
+//                        recentlyUsedPlaylists = recentPlaylists
                     )
 
                 }
@@ -122,6 +141,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                 ?: emptyList()).map { mapToVideoItem(it) }
         )
     }
+
 
     private fun playlistToMap(playlist: Playlist): Map<String, Any?> {
         return mapOf(
@@ -147,6 +167,24 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         )
 
     }
+    private fun recentItemToMap(item: RecentItem): Map<String, Any?> {
+        return when (item) {
+            is RecentItem.RecentPlaylist -> mapOf(
+                "type" to "playlist",
+                "id" to item.playlist.id,
+                "name" to item.playlist.name,
+                "description" to item.playlist.description,
+                "videos" to item.playlist.videos.map { videoItemToMap(it) }
+            )
+            is RecentItem.RecentVideo -> mapOf(
+                "type" to "video",
+                "videoId" to item.video.videoId,
+                "title" to item.video.title,
+                "thumbnailUrl" to item.video.thumbnailUrl
+            )
+        }
+    }
+
 
     private fun saveListToFirestore(fieldName: String, list: List<VideoItem>) {
         if (!isLoggedIn()) return
@@ -403,19 +441,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
     }
 
 
-//    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-//    fun addToPlayList(video: VideoItem) {
-//        if (!isLoggedIn()) return
-//        val currentList = _uiState.value.playList.toMutableList()
-//        if (!currentList.any { it.videoId == video.videoId }) {
-//            currentList.add(0, video)
-//
-//            if (currentList.size > 50) currentList.removeLast()
-//        }
-//        _uiState.value = _uiState.value.copy(playList = currentList)
-//        saveListToFirestore("playList", currentList)
-//
-//    }
+
 
     fun createPlaylist(
         name: String,
@@ -443,19 +469,21 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         return newPlaylist
     }
 
-    private fun savePlaylistsToFirestore(playlists: List<Playlist>) {
-        if (!isLoggedIn()) return
-        viewModelScope.launch {
-            try {
-                val userDoc = firestore.collection("users").document(currentUserId!!)
-                val data = mapOf("playlists" to playlists.map { playlistToMap(it) })
-                userDoc.set(data, SetOptions.merge()).await()
-            } catch (e: Exception) {
-                _uiState.value =
-                    _uiState.value.copy(error = "Failed to save playlists: ${e.message}")
-            }
-        }
-    }
+
+
+//    private fun savePlaylistsHistoryToFirestore(playlists: List<Playlist>) {
+//        if (!isLoggedIn()) return
+//        viewModelScope.launch {
+//            try {
+//                val userDoc = firestore.collection("users").document(currentUserId!!)
+//                val data = mapOf("recentlyUsedPlaylists" to playlists.map { playlistToMap(it) })
+//                userDoc.set(data, SetOptions.merge()).await()
+//            } catch (e: Exception) {
+//                _uiState.value =
+//                    _uiState.value.copy(error = "Failed to save playlists: ${e.message}")
+//            }
+//        }
+//    }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     fun addToSpecificPlaylist(playlistId: String, video: VideoItem) {
@@ -508,10 +536,79 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         _uiState.value = _uiState.value.copy(currentPlaylist = currentPlaylist)
     }
 
+//    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+//    fun addToRecentlyUsedPlaylists(playlist: Playlist) {
+//        if (!isLoggedIn()) return
+//        val currentList = _uiState.value.recentlyUsedPlaylists.toMutableList()
+//
+//
+//        currentList.removeAll { it.id == playlist.id }
+//        currentList.add(0, playlist)
+//
+//
+//        if (currentList.size > 3) currentList.removeLast()
+//
+//        _uiState.value = _uiState.value.copy(recentlyUsedPlaylists = currentList)
+//        savePlaylistsHistoryToFirestore(currentList)
+//    }
 
+
+
+
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+fun addRecentPlaylist(playlist: Playlist) {
+    updateRecent(RecentItem.RecentPlaylist(playlist))
 }
 
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+fun addRecentVideo(video: VideoItem) {
+    updateRecent(RecentItem.RecentVideo(video))
+}
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+fun updateRecent(item: RecentItem){
+    val current = _uiState.value.recentInteractions.toMutableList()
+    current.removeAll {
+        (it is RecentItem.RecentPlaylist && item is RecentItem.RecentPlaylist && it.playlist.id == item.playlist.id) ||
+                (it is RecentItem.RecentVideo && item is RecentItem.RecentVideo && it.video.videoId == item.video.videoId)
+    }
+    current.add(0, item)
+    if (current.size > 10) current.removeLast()
+    _uiState.value = _uiState.value.copy(recentInteractions = current)
+    saveRecentInteractionsToFirestore(current)
+}
 
+    private fun saveRecentInteractionsToFirestore(list: List<RecentItem>) {
+        if (!isLoggedIn()) return
+
+        viewModelScope.launch {
+            try {
+                val userDoc = firestore.collection("users").document(currentUserId!!)
+
+                val data = mapOf(
+                    "recentInteractions" to list.map { recentItemToMap(it) }
+                )
+
+                userDoc.set(data, SetOptions.merge()).await()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to save recents: ${e.message}")
+            }
+        }
+    }
+
+    private fun savePlaylistsToFirestore(playlists: List<Playlist>) {
+        if (!isLoggedIn()) return
+        viewModelScope.launch {
+            try {
+                val userDoc = firestore.collection("users").document(currentUserId!!)
+                val data = mapOf("playlists" to playlists.map { playlistToMap(it) })
+                userDoc.set(data, SetOptions.merge()).await()
+            } catch (e: Exception) {
+                _uiState.value =
+                    _uiState.value.copy(error = "Failed to save playlists: ${e.message}")
+            }
+        }
+    }
+}
 data class UiState(
     var searchQuery: String = "",
     var results: List<VideoItem> = emptyList(),
@@ -527,6 +624,10 @@ data class UiState(
     val playlists: List<Playlist> = emptyList(),
 
     val disLiked: List<VideoItem> = emptyList(),
+
+    val recentlyUsedPlaylists: List<Playlist> = emptyList(),
+
+    val recentInteractions: List<RecentItem> = emptyList(),
 
 
     val currentPlaylist: List<VideoItem> = emptyList(),

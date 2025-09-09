@@ -68,13 +68,12 @@ fun MenuScreen(
     navController: NavController,
     libraryNavController: NavController,
     viewModel: MusicViewModel,
-    ) {
+) {
     val state by viewModel.uiState.collectAsState()
     var openDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        modifier = Modifier.fillMaxWidth(),
-        topBar = {
+        modifier = Modifier.fillMaxWidth(), topBar = {
             TopAppBar(
                 modifier = Modifier.fillMaxWidth(),
                 title = {
@@ -82,7 +81,8 @@ fun MenuScreen(
                 },
                 actions = {
                     Icon(
-                        imageVector = Icons.Default.History, contentDescription = null,
+                        imageVector = Icons.Default.History,
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .size(40.dp)
@@ -95,7 +95,8 @@ fun MenuScreen(
                     )
 
                     Icon(
-                        imageVector = Icons.Default.Search, contentDescription = null,
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .size(40.dp)
@@ -112,8 +113,7 @@ fun MenuScreen(
 
 
                 )
-        }
-    ) { innerPadding ->
+        }) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -162,7 +162,8 @@ fun MenuScreen(
                             },
                     ) {
                         Text(
-                            "Liked Music", color =MaterialTheme.colorScheme.onBackground,
+                            "Liked Music",
+                            color = MaterialTheme.colorScheme.onBackground,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             modifier = Modifier
@@ -174,7 +175,6 @@ fun MenuScreen(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-
 
 
             // dynamic playlists
@@ -190,7 +190,10 @@ fun MenuScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(
-                            onClick = { libraryNavController.navigate("PlaylistDetail/${playlist.id}") },  // assume new screen
+                            onClick = {
+                                libraryNavController.navigate("PlaylistDetail/${playlist.id}")
+                                viewModel.addRecentPlaylist(playlist)
+                            },  // assume new screen
                             Modifier
                                 .size(60.dp)
                                 .clip(RoundedCornerShape(6.dp))
@@ -210,7 +213,8 @@ fun MenuScreen(
                                 .clickable { libraryNavController.navigate("PlaylistDetail/${playlist.id}") },
                         ) {
                             Text(
-                                playlist.name, color = MaterialTheme.colorScheme.onBackground,
+                                playlist.name,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
                             )
@@ -224,24 +228,25 @@ fun MenuScreen(
 
 
             Spacer(modifier = Modifier.height(20.dp))
-            Surface(
-                modifier = Modifier
-                    .width(120.dp)
-                    .clickable {
-                        openDialog=true
-                    }
-                    .padding(end = 18.dp)
-                    .height(40.dp)
-                    .align(Alignment.End),
+            Surface(modifier = Modifier
+                .width(120.dp)
+                .clickable {
+                    openDialog = true
+                }
+                .padding(end = 18.dp)
+                .height(40.dp)
+                .align(Alignment.End),
                 color = MaterialTheme.colorScheme.onBackground,
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Row(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(5.dp ),
+                shape = RoundedCornerShape(24.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(5.dp),
                     horizontalArrangement = Arrangement.Start,
-                    verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.Add,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
                         contentDescription = null,
                         tint = DarkOnPrimary,
                         modifier = Modifier.size(30.dp)
@@ -249,19 +254,17 @@ fun MenuScreen(
                     Text("New", color = DarkPrimary, fontSize = 15.sp)
                 }
             }
-                if(openDialog){
-                    DialogBox(
-                        onClose = { openDialog = false },
-                        onCreate = {name, description ->
-                            val created =viewModel.createPlaylist(name ,description)
-                            if(created !=null){
+            if (openDialog) {
+                DialogBox(onClose = {
+                    openDialog = false }, onCreate = { name, description ->
+                    val created = viewModel.createPlaylist(name, description)
+                    if (created != null) {
+                        libraryNavController.navigate("PlaylistDetail/${created.id}")
+                        viewModel.addRecentPlaylist(created)
+                    }
+                })
 
-                            libraryNavController.navigate("PlaylistDetail/${created.id}")
-                            }
-                        }
-                    )
-
-                }
+            }
 
 
         }
@@ -269,7 +272,9 @@ fun MenuScreen(
 }
 
 @Composable
-fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem) -> Unit,onOpen: ()->Unit ) {
+fun PlayingItem(
+    id: String, title: String, thumnail: String, onClick: (VideoItem) -> Unit, onOpen: () -> Unit
+) {
 
     Row(
         modifier = Modifier
@@ -279,9 +284,7 @@ fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(thumnail)
-                .crossfade(true)
+            model = ImageRequest.Builder(LocalContext.current).data(thumnail).crossfade(true)
                 .build(),
             contentDescription = null,
             placeholder = painterResource(R.drawable.imageloader),
@@ -312,12 +315,10 @@ fun PlayingItem(id: String, title: String, thumnail: String, onClick: (VideoItem
 
 
         Box(
-            modifier = Modifier
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             IconButton(
-                onClick = {onOpen()}
-            ) {
+                onClick = { onOpen() }) {
                 Icon(
                     Icons.Default.MoreVert,
                     contentDescription = "More options",
