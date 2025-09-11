@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -67,29 +68,39 @@ fun RecentInteractionsSection(
             columns = GridCells.Fixed(2),
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 1500.dp)
-                .wrapContentHeight(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(12.dp)
+                .heightIn(max = 1500.dp),
+            verticalArrangement = Arrangement.spacedBy(19.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(8.dp) // sirf ek jagah padding
         ) {
             items(items) { item ->
                 when (item) {
                     is RecentItem.RecentVideo -> {
-                        VideoCard(
-                            video = item.video,
-                            onClick = { onPlayVideo(item.video) }
-                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                        ) {
+                            VideoCard(
+                                video = item.video,
+                                onClick = { onPlayVideo(item.video) }
+                            )
+                        }
                     }
                     is RecentItem.RecentPlaylist -> {
-                        PlaylistCard(
-                            playlist = item.playlist,
-                            onClick = { onOpenPlaylist(item.playlist) }
-                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                        ) {
+                            PlaylistCard(
+                                playlist = item.playlist,
+                                onClick = { onOpenPlaylist(item.playlist) }
+                            )
+                        }
                     }
                 }
             }
         }
+
     }
 }
 
@@ -127,16 +138,14 @@ fun PlaylistCard(playlist: Playlist, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            //.width(200.dp)
-            .padding(start = 8.dp)
             .clickable { onClick() }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(16f/9f)
+                .aspectRatio(15f/9f)
                 .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
+                .background(Color(0x1CDBD6D2)),
             contentAlignment = Alignment.Center
         ) {
             Icon(

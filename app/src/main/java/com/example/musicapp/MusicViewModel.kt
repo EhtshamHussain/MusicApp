@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import org.schabi.newpipe.extractor.InfoItem
+import org.schabi.newpipe.extractor.ListExtractor
+import org.schabi.newpipe.extractor.Page
 import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import org.schabi.newpipe.extractor.timeago.patterns.pl
@@ -95,10 +98,16 @@ class MusicViewModel(private val context: Context) : ViewModel() {
 
                     val recentPlaylistAndVieoItem =
                         (userDoc.get("recentInteractions") as? List<Map<String, Any?>>
-                        ?: emptyList()).mapNotNull {map->
-                            when(map["type"]){
-                                "playlist" ->{ RecentItem.RecentPlaylist(mapToPlaylist(map))}
-                                "video" -> {RecentItem.RecentVideo(mapToVideoItem(map))}
+                            ?: emptyList()).mapNotNull { map ->
+                            when (map["type"]) {
+                                "playlist" -> {
+                                    RecentItem.RecentPlaylist(mapToPlaylist(map))
+                                }
+
+                                "video" -> {
+                                    RecentItem.RecentVideo(mapToVideoItem(map))
+                                }
+
                                 else -> null
                             }
                         }
@@ -167,6 +176,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         )
 
     }
+
     private fun recentItemToMap(item: RecentItem): Map<String, Any?> {
         return when (item) {
             is RecentItem.RecentPlaylist -> mapOf(
@@ -176,6 +186,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                 "description" to item.playlist.description,
                 "videos" to item.playlist.videos.map { videoItemToMap(it) }
             )
+
             is RecentItem.RecentVideo -> mapOf(
                 "type" to "video",
                 "videoId" to item.video.videoId,
@@ -202,30 +213,137 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-
     fun updateSearch(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query, isLoading = true)
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val extractor = ServiceList.YouTube.getSearchExtractor("$query music")
                 extractor.fetchPage()
-                val items = extractor.initialPage.items.filterIsInstance<StreamInfoItem>()
+
+                val results = mutableListOf<VideoItem>()
+                val initialPage = extractor.initialPage
+                val items = initialPage.items.filterIsInstance<StreamInfoItem>()
+                results.addAll(items.map {
+                    VideoItem(
+                        videoId = extractVideoId(it.url),
+                        title = it.name,
+                        thumbnailUrl = it.thumbnails.firstOrNull()?.url.orEmpty()
+                    )
+                })
                 _uiState.value = _uiState.value.copy(
-                    results = items.map {
-                        VideoItem(
-                            videoId = extractVideoId(it.url),
-                            title = it.name,
-                            thumbnailUrl = it.thumbnails.firstOrNull()?.url.toString()
-
-                        )
-                    }, isLoading = false
-
+                    results = results,
+                    isLoading = false,
+                    nextPage = initialPage.getNextPage()
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Search failed: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    error = "Search failed: ${e.message}",
+                    isLoading = false
+                )
             }
         }
     }
+
+    // New function for loading more
+    fun loadMore() {
+        val currentNextPage = _uiState.value.nextPage ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val extractor = ServiceList.YouTube.getSearchExtractor("${_uiState.value.searchQuery} music")  // Query reuse
+                val page = extractor.getPage(currentNextPage)
+                val items = page.items.filterIsInstance<StreamInfoItem>()
+                val newResults = items.map {
+                    VideoItem(
+                        videoId = extractVideoId(it.url),
+                        title = it.name,
+                        thumbnailUrl = it.thumbnails.firstOrNull()?.url.orEmpty()
+                    )
+                }
+                _uiState.value = _uiState.value.copy(
+                    results = _uiState.value.results + newResults,  // Append karo
+                    nextPage = page.getNextPage()  // Agli next page save
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Search failed: ${e.message}",
+                    isLoading = false
+                )
+            }
+        }
+    }
+    fun clearSearchResults() {
+        _uiState.value = _uiState.value.copy(
+            results = emptyList(),
+            searchQuery = "",  // Yeh 4th issue bhi solve karega
+            nextPage = null
+        )
+    }
+//    fun updateSearch(query: String) {
+//        _uiState.value = _uiState.value.copy(searchQuery = query, isLoading = true)
+//        viewModelScope.launch(Dispatchers.IO) {
+//            try {
+//                val extractor = ServiceList.YouTube.getSearchExtractor("$query music")
+//                extractor.fetchPage()
+//
+//                val results = mutableListOf<VideoItem>()
+//                var page = extractor.initialPage
+//                var pageCount = 0
+//                val maxPages = 5
+//
+//                while (true) {
+//                    val items = page.items.filterIsInstance<StreamInfoItem>()
+//                    results.addAll(items.map {
+//                        VideoItem(
+//                            videoId = extractVideoId(it.url),
+//                            title = it.name,
+//                            thumbnailUrl = it.thumbnails.firstOrNull()?.url.orEmpty()
+//                        )
+//                    })
+//
+//                    val next = page.getNextPage() ?: break
+//                    if (pageCount >= maxPages) break
+//
+//                    page = extractor.getPage(next)
+//                    pageCount++
+//                }
+//
+//                _uiState.value = _uiState.value.copy(
+//                    results = results,
+//                    isLoading = false
+//                )
+//            } catch (e: Exception) {
+//                _uiState.value = _uiState.value.copy(
+//                    error = "Search failed: ${e.message}",
+//                    isLoading = false
+//                )
+//            }
+//        }
+//    }
+
+
+//    fun updateSearch(query: String) {
+//        _uiState.value = _uiState.value.copy(searchQuery = query, isLoading = true)
+//        viewModelScope.launch(Dispatchers.IO) {
+//            try {
+//                val extractor = ServiceList.YouTube.getSearchExtractor("$query music")
+//                extractor.fetchPage()
+//                val items = extractor.initialPage.items.filterIsInstance<StreamInfoItem>()
+//                _uiState.value = _uiState.value.copy(
+//                    results = items.map {
+//                        VideoItem(
+//                            videoId = extractVideoId(it.url),
+//                            title = it.name,
+//                            thumbnailUrl = it.thumbnails.firstOrNull()?.url.toString()
+//
+//                        )
+//                    }, isLoading = false
+//
+//                )
+//            } catch (e: Exception) {
+//                _uiState.value = _uiState.value.copy(error = "Search failed: ${e.message}")
+//            }
+//        }
+//    }
 
     fun playVideo(
         videoId: String,
@@ -441,8 +559,6 @@ class MusicViewModel(private val context: Context) : ViewModel() {
     }
 
 
-
-
     fun createPlaylist(
         name: String,
         description: String,
@@ -468,7 +584,6 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         savePlaylistsToFirestore(currentPlaylists)
         return newPlaylist
     }
-
 
 
 //    private fun savePlaylistsHistoryToFirestore(playlists: List<Playlist>) {
@@ -506,6 +621,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
 
         savePlaylistsToFirestore(currentPlaylists)
     }
+
     fun removeFromSpecificPlaylist(playlistId: String, video: VideoItem) {
         val updatedPlaylists = _uiState.value.playlists.map { playlist ->
             if (playlist.id == playlistId) {
@@ -553,29 +669,28 @@ class MusicViewModel(private val context: Context) : ViewModel() {
 //    }
 
 
-
-
-@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-fun addRecentPlaylist(playlist: Playlist) {
-    updateRecent(RecentItem.RecentPlaylist(playlist))
-}
-
-@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-fun addRecentVideo(video: VideoItem) {
-    updateRecent(RecentItem.RecentVideo(video))
-}
-@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-fun updateRecent(item: RecentItem){
-    val current = _uiState.value.recentInteractions.toMutableList()
-    current.removeAll {
-        (it is RecentItem.RecentPlaylist && item is RecentItem.RecentPlaylist && it.playlist.id == item.playlist.id) ||
-                (it is RecentItem.RecentVideo && item is RecentItem.RecentVideo && it.video.videoId == item.video.videoId)
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    fun addRecentPlaylist(playlist: Playlist) {
+        updateRecent(RecentItem.RecentPlaylist(playlist))
     }
-    current.add(0, item)
-    if (current.size > 10) current.removeLast()
-    _uiState.value = _uiState.value.copy(recentInteractions = current)
-    saveRecentInteractionsToFirestore(current)
-}
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    fun addRecentVideo(video: VideoItem) {
+        updateRecent(RecentItem.RecentVideo(video))
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    fun updateRecent(item: RecentItem) {
+        val current = _uiState.value.recentInteractions.toMutableList()
+        current.removeAll {
+            (it is RecentItem.RecentPlaylist && item is RecentItem.RecentPlaylist && it.playlist.id == item.playlist.id) ||
+                    (it is RecentItem.RecentVideo && item is RecentItem.RecentVideo && it.video.videoId == item.video.videoId)
+        }
+        current.add(0, item)
+        if (current.size > 10) current.removeLast()
+        _uiState.value = _uiState.value.copy(recentInteractions = current)
+        saveRecentInteractionsToFirestore(current)
+    }
 
     private fun saveRecentInteractionsToFirestore(list: List<RecentItem>) {
         if (!isLoggedIn()) return
@@ -609,6 +724,7 @@ fun updateRecent(item: RecentItem){
         }
     }
 }
+
 data class UiState(
     var searchQuery: String = "",
     var results: List<VideoItem> = emptyList(),
@@ -629,9 +745,10 @@ data class UiState(
 
     val recentInteractions: List<RecentItem> = emptyList(),
 
-
     val currentPlaylist: List<VideoItem> = emptyList(),
     val currentIndex: Int = -1,
+
+    val nextPage: Page? = null
 )
 
 

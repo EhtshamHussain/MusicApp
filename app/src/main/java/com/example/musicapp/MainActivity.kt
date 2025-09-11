@@ -13,7 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.example.musicapp.DownloaderImpl.DownloaderImpl
 import com.example.musicapp.Screen.NavigationScreen
-import com.example.musicapp.SingerData.abc
+
 
 import com.example.musicapp.ui.theme.MusicAppTheme
 import org.schabi.newpipe.extractor.NewPipe
@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MusicAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    //abc(modifier = Modifier.padding(innerPadding))
+//                    abc(modifier = Modifier.padding(innerPadding))
                     NavigationScreen(modifier = Modifier.padding(innerPadding))
                 }
             }

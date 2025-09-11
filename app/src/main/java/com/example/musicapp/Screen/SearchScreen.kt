@@ -92,6 +92,8 @@ import com.example.musicapp.SharedPreferences.SearchPrefManager
 import com.example.musicapp.ui.theme.DarkOnPrimary
 import com.example.musicapp.ui.theme.DarkPrimary
 import kotlinx.coroutines.Dispatchers
+import androidx.compose.foundation.lazy.rememberLazyListState  // Add this import
+import androidx.compose.runtime.snapshotFlow
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,6 +106,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
     val context = LocalContext.current
     val manager = remember { SearchPrefManager(context) }
 
+    val listState = rememberLazyListState()
 
     var selectedItem by remember { mutableStateOf<VideoItem?>(null) }
 
@@ -111,7 +114,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
     val searches = remember { mutableStateListOf<String>() }
 
     LaunchedEffect(Dispatchers.IO) {
-        state.searchQuery = ""
+        viewModel.clearSearchResults()
         searches.clear()
         searches.addAll(manager.getSearches())
     }
@@ -137,7 +140,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                 contentDescription = "back Arrow",
                 modifier = Modifier
                     .clickable {
-                        state.results = emptyList()
+                        viewModel.clearSearchResults()
                         viewModel.selecteTab.value = 1
                         val poped = navController.popBackStack()
                         if (!poped) {
@@ -265,7 +268,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
 
             } else {
                 Spacer(modifier = Modifier.height(8.dp))
-                LazyColumn {
+                LazyColumn(state = listState) {
                     items(state.results) { video ->
                         var expanded by remember { mutableStateOf(false) }
                         Column(
@@ -340,7 +343,23 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                             }
                         }
                     }
+                    if (state.nextPage != null && !state.isLoading) {
+                        item {
+                            Box(Modifier.fillMaxWidth(), Alignment.Center) {
+                                CircularProgressIndicator()  // Jab loading more ho
+                            }
+                        }
+                    }
                 }
+                LaunchedEffect(listState) {
+                    snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+                        .collect { lastIndex ->
+                            if (lastIndex != null && lastIndex >= state.results.size - 1 && state.nextPage != null) {
+                                viewModel.loadMore()  // End pe load more
+                            }
+                        }
+                }
+
                 if (showBottomSheet.value) {
                     MusicSheet(viewModel, navController, showBottomSheet, selectedItem)
                 }

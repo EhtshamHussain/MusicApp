@@ -25,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.musicapp.MusicViewModel
 import com.example.musicapp.Model.navigationItem
+import com.example.musicapp.SingerData.SingerScreen
 import com.example.musicapp.ui.theme.BottomBarColorYouTubeDark
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -67,7 +68,7 @@ fun MainScreen(navController: NavController,  viewModel: MusicViewModel) {
                                             saveState = true
                                             inclusive = false
                                         }
-                                        restoreState = true
+                                        restoreState = false
                                         launchSingleTop = true
                                     }
 
@@ -124,6 +125,13 @@ fun MainScreen(navController: NavController,  viewModel: MusicViewModel) {
             composable("SettingScreen") { SettingScreen() }
             composable("HistoryScreen") { HistoryScreen(navController ,bottomNavController , viewModel) }
             composable("Favourite") { Favourite(navController ,bottomNavController , viewModel) }
+            composable(
+                route = "SingerScreen/{singerName}",
+                arguments = listOf(navArgument("singerName"){type = NavType.StringType})
+            ) {navBackStackEntry->
+                val singerName = navBackStackEntry.arguments?.getString("singerName") ?: ""
+                SingerScreen(singerName,navController ,bottomNavController , viewModel)
+            }
 
             composable(
                 route = "PlaylistDetail/{playlistId}",
