@@ -355,7 +355,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                     snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
                         .collect { lastIndex ->
                             if (lastIndex != null && lastIndex >= state.results.size - 1 && state.nextPage != null) {
-                                viewModel.loadMore()  // End pe load more
+                                viewModel.loadMore()
                             }
                         }
                 }

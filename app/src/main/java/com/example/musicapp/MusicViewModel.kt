@@ -687,22 +687,19 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                     (it is RecentItem.RecentVideo && item is RecentItem.RecentVideo && it.video.videoId == item.video.videoId)
         }
         current.add(0, item)
-        if (current.size > 10) current.removeLast()
+        if (current.size >= 11) current.removeLast()
         _uiState.value = _uiState.value.copy(recentInteractions = current)
         saveRecentInteractionsToFirestore(current)
     }
 
     private fun saveRecentInteractionsToFirestore(list: List<RecentItem>) {
         if (!isLoggedIn()) return
-
         viewModelScope.launch {
             try {
                 val userDoc = firestore.collection("users").document(currentUserId!!)
-
                 val data = mapOf(
                     "recentInteractions" to list.map { recentItemToMap(it) }
                 )
-
                 userDoc.set(data, SetOptions.merge()).await()
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Failed to save recents: ${e.message}")

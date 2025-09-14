@@ -130,24 +130,6 @@ fun HomeScreen(navController: NavController , bottomNavController: NavController
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @Composable
 fun DialogBox(
     onClose: () -> Unit,

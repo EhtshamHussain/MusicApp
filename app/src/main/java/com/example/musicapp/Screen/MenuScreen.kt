@@ -2,6 +2,7 @@ package com.example.musicapp.Screen
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -114,13 +117,30 @@ fun MenuScreen(
 
                 )
         }) { innerPadding ->
+
+        val scrollState = rememberScrollState()
+
+// only recomposes when threshold cross hota hai
+        val isScrolled by remember {
+            derivedStateOf { scrollState.value > 50 }
+        }
+
+
+        val targetWidth by animateDpAsState(
+            targetValue = if (scrollState.value > 50) 56.dp else 120.dp,
+            label = "widthAnim"
+        )
+
+        val targetShape by animateDpAsState(
+            targetValue = if (scrollState.value > 50) 28.dp else 24.dp,
+            label = "shapeAnim"
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
 
-
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .background(
                     MaterialTheme.colorScheme.background
                 )
@@ -144,12 +164,12 @@ fun MenuScreen(
                         Modifier
                             .size(60.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(color = Color(0xFF2196F3))
+                            .background(color = Color(0x1CDBD6D2))
                     ) {
                         Icon(
                             imageVector = Icons.Default.Favorite, // 👈 built-in Like icon
                             contentDescription = "Favorite ",
-                            tint = Color.Blue, // color change kar sakte ho
+                            tint = MaterialTheme.colorScheme.onBackground, // color change kar sakte ho
                             modifier = Modifier.size(35.dp)
                         )
                     }
@@ -182,35 +202,64 @@ fun MenuScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 18.dp),
+                        .padding(start = 18.dp,),
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                libraryNavController.navigate("PlaylistDetail/${playlist.id}")
+                                viewModel.addRecentPlaylist(playlist)
+                            }, // ✅ Single clickable for entire row
                         horizontalArrangement = Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(
-                            onClick = {
-                                libraryNavController.navigate("PlaylistDetail/${playlist.id}")
-                                viewModel.addRecentPlaylist(playlist)
-                            },  // assume new screen
-                            Modifier
+                        Box(
+                            modifier = Modifier
                                 .size(60.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(color = Color(0xFF2196F3))
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,  // default playlist icon
-                                contentDescription = "Playlist ${playlist.name}",
-                                tint = Color.White,
-                                modifier = Modifier.size(35.dp)
-                            )
+                            if (playlist.videos.isNotEmpty()) {
+                                AsyncImage(
+                                    model = playlist.videos.first().thumbnailUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.matchParentSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(
+                                                    Color.Black.copy(alpha = 0.2f),
+                                                    Color.Transparent
+                                                )
+                                            )
+                                        )
+                                )
+                            } else {
+                                // Default background for empty playlist
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .background(color = Color(0x1CDBD6D2)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                        contentDescription = "Playlist ${playlist.name}",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                            }
                         }
+
                         Spacer(Modifier.width(8.dp))
+
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { libraryNavController.navigate("PlaylistDetail/${playlist.id}") },
+                            modifier = Modifier.weight(1f)
                         ) {
                             Text(
                                 playlist.name,
@@ -218,45 +267,23 @@ fun MenuScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
                             )
-                            Text(playlist.description, color = DarkOnPrimary)
+                            Text(
+                                playlist.description,
+                                color = DarkOnPrimary
+                            )
                         }
                     }
                 }
+
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
+            Spacer(modifier = Modifier.height(80.dp))
 
-
-            Spacer(modifier = Modifier.height(20.dp))
-            Surface(modifier = Modifier
-                .width(120.dp)
-                .clickable {
-                    openDialog = true
-                }
-                .padding(end = 18.dp)
-                .height(40.dp)
-                .align(Alignment.End),
-                color = MaterialTheme.colorScheme.onBackground,
-                shape = RoundedCornerShape(24.dp)) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(5.dp),
-                    horizontalArrangement = Arrangement.Start,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        tint = DarkOnPrimary,
-                        modifier = Modifier.size(30.dp)
-                    )
-                    Text("New", color = DarkPrimary, fontSize = 15.sp)
-                }
-            }
             if (openDialog) {
                 DialogBox(onClose = {
-                    openDialog = false }, onCreate = { name, description ->
+                    openDialog = false
+                }, onCreate = { name, description ->
                     val created = viewModel.createPlaylist(name, description)
                     if (created != null) {
                         libraryNavController.navigate("PlaylistDetail/${created.id}")
@@ -265,8 +292,44 @@ fun MenuScreen(
                 })
 
             }
+        }
+        Box(modifier = Modifier.fillMaxSize()
+            .padding(bottom = 40.dp),
+            contentAlignment = Alignment.BottomEnd,
+            ){
+        Surface(
+            modifier = Modifier
+                .width(targetWidth)
+                .clickable {
+                    openDialog = true
+                }
+                .padding(end = 18.dp,)
+                .height(50.dp)
+//                .align(Alignment.TopEnd)
+            ,
+            color = MaterialTheme.colorScheme.onBackground,
+            shape = RoundedCornerShape(targetShape)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = DarkOnPrimary,
+                    modifier = Modifier.size(30.dp)
+                )
 
-
+                if (scrollState.value < 50) {
+                    Spacer(Modifier.width(4.dp))
+                    Text("New", color = DarkPrimary, fontSize = 15.sp)
+                }
+            }
+        }
         }
     }
 }

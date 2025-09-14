@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -68,12 +70,19 @@ fun RecentInteractionsSection(
             columns = GridCells.Fixed(2),
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 1500.dp),
+                .heightIn(max = 2000.dp),
             verticalArrangement = Arrangement.spacedBy(19.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(8.dp) // sirf ek jagah padding
+            contentPadding = PaddingValues(8.dp)
         ) {
-            items(items) { item ->
+            items(
+                items.filter { item->
+                    when(item){
+                        is RecentItem.RecentPlaylist -> item.playlist.videos.isNotEmpty()
+                        is RecentItem.RecentVideo -> true
+                    }
+                }
+            ) { item ->
                 when (item) {
                     is RecentItem.RecentVideo -> {
                         Box(
@@ -132,40 +141,58 @@ fun VideoCard(video: VideoItem, onClick: () -> Unit) {
         )
     }
 }
-
 @Composable
 fun PlaylistCard(playlist: Playlist, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(15f/9f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0x1CDBD6D2)),
-            contentAlignment = Alignment.Center
+                .clickable { onClick() }
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.size(32.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(15f / 9f)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+
+                    AsyncImage(
+                        model = playlist.videos.first().thumbnailUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.4f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                    )
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                    contentDescription = "Playlist ${playlist.name}",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(28.dp)
+                )
+            }
+            Text(
+                text = playlist.name,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 10.sp,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
-        Text(
-            text = playlist.name,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 10.sp,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
-}
-
-
