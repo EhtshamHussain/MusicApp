@@ -69,6 +69,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.musicapp.DownloadMusic.DownloadAudioButton
+import com.example.musicapp.EnumRemoveList.RemoveType
 import com.example.musicapp.Model.NavigationItem
 import com.example.musicapp.Model.VideoItem
 import com.example.musicapp.MusicViewModel
@@ -84,7 +85,7 @@ fun PlaylistDetailScreen(
     playlistId: String,
 ) {
     val state by viewModel.uiState.collectAsState()
-    val bottomSheet = remember {mutableStateOf(false)  }
+    val bottomSheet = remember { mutableStateOf(false) }
 
     val playlist = state.playlists.find { it.id == playlistId }
     var selectedItem by remember { mutableStateOf<VideoItem?>(null) }
@@ -109,7 +110,8 @@ fun PlaylistDetailScreen(
                 },
 
                 actions = {
-                    Icon(imageVector = Icons.Default.Search , contentDescription = null ,
+                    Icon(
+                        imageVector = Icons.Default.Search, contentDescription = null,
                         tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .size(40.dp)
@@ -130,16 +132,16 @@ fun PlaylistDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(color = MaterialTheme.colorScheme.background),
-        ){
+        ) {
             LazyColumn(modifier = Modifier.padding(innerPadding)) {
-                itemsIndexed(playlist?.videos ?: emptyList()) {index , it ->
+                itemsIndexed(playlist?.videos ?: emptyList()) { index, it ->
                     PlayingItem(
                         it.videoId,
                         it.title,
                         it.thumbnailUrl ?: "",
                         onClick = {
                             selectedItem = it
-                            viewModel.playVideo(it.videoId, playlist?.videos ?:emptyList(), index)
+                            viewModel.playVideo(it.videoId, playlist?.videos ?: emptyList(), index)
                             navController.navigate("PlayerScreen")
                         },
                         onOpen = {
@@ -152,14 +154,16 @@ fun PlaylistDetailScreen(
             }
         }
     }
-            if(bottomSheet.value){
-                BottomSheet(
-                    selectedItem = selectedItem,
-                    viewModel=viewModel,
-                    playlistId,
-                    onDismiss = {bottomSheet.value=false})
-            }
+    if (bottomSheet.value) {
+        BottomSheet(
+            selectedItem = selectedItem,
+            viewModel = viewModel,
+            playlistId,
+            removeType = RemoveType.PLAYLIST,
+            onDismiss = { bottomSheet.value = false })
+    }
 }
+
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -167,21 +171,20 @@ fun PlaylistDetailScreen(
 fun BottomSheet(
     selectedItem: VideoItem?,
     viewModel: MusicViewModel,
-    playlistId: String,
-    onDismiss :() -> Unit) {
-
-
+    playlistId: String?=null,
+    removeType: RemoveType,
+    onDismiss: () -> Unit
+) {
     if (selectedItem == null) return
-    val video : VideoItem = selectedItem
+    val video: VideoItem = selectedItem
     val bottomSheetState = rememberModalBottomSheetState()
-
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     ModalBottomSheet(
         sheetState = bottomSheetState,
-        onDismissRequest = {onDismiss()}
+        onDismissRequest = { onDismiss() }
     ) {
-        val context = LocalContext.current
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -190,6 +193,7 @@ fun BottomSheet(
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Center
         ) {
+            // Thumbnail + Title + Like/Dislike Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Start,
@@ -210,8 +214,7 @@ fun BottomSheet(
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     video.title,
-                    modifier = Modifier
-                        .weight(1f),
+                    modifier = Modifier.weight(1f),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 11.sp,
                     maxLines = 2,
@@ -248,47 +251,67 @@ fun BottomSheet(
                         contentDescription = null,
                     )
                 }
-//                Spacer(Modifier.padding(start = 10.dp))
-
-
             }
+
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
-
             Spacer(modifier = Modifier.padding(top = 12.dp))
+
 
             TextButton(
                 onClick = {
-                    viewModel.removeFromSpecificPlaylist(playlistId =playlistId , video = video)
-                    Toast.makeText(context , "Removed From List", Toast.LENGTH_SHORT).show()
+                    when (removeType) {
+                        RemoveType.PLAYLIST -> {
+                            if (playlistId != null) {
+                                viewModel.removeFromSpecificPlaylist(playlistId, video)
+                                Toast.makeText(context, "Removed From Playlist", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        RemoveType.FAVOURITES -> {
+                            viewModel.removeFromFavourites(video.videoId)
+                            Toast.makeText(context, "Removed From Favourites", Toast.LENGTH_SHORT).show()
+                        }
+                        RemoveType.HISTORY -> {
+                            viewModel.removeFromHistory(video.videoId)
+                            Toast.makeText(context, "Removed From History", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                     onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth()
+                          },
+                modifier = Modifier
+                    .fillMaxWidth()
                     .height(53.dp),
-
                 colors = ButtonDefaults.textButtonColors(
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onBackground,
                 )
-
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-               Icon(imageVector = Icons.Default.Delete, contentDescription = null,
-                   tint = MaterialTheme.colorScheme.onBackground)
-                   Spacer(modifier = Modifier.width(12.dp))
-                Text("Remove From List" ,
-                    fontSize = 16.sp,
-
-                    textAlign = TextAlign.Start,
-                    modifier = Modifier.fillMaxWidth()
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        when (removeType) {
+                            RemoveType.PLAYLIST -> "Remove From Playlist"
+                            RemoveType.FAVOURITES -> "Remove From Favourites"
+                            RemoveType.HISTORY -> "Remove From History"
+                        },
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
 
-            DownloadAudioButton(context,video.title , video)
+
+            DownloadAudioButton(context, video.title, video)
+
 
             TextButton(
                 onClick = {
@@ -309,7 +332,7 @@ fun BottomSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.QueuePlayNext, // icon for "play next"
+                        imageVector = Icons.Default.QueuePlayNext,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onBackground
                     )
@@ -322,12 +345,182 @@ fun BottomSheet(
                     )
                 }
             }
-
-
-
         }
-
-
     }
 }
 
+
+
+
+//
+//@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun BottomSheet(
+//    selectedItem: VideoItem?,
+//    viewModel: MusicViewModel,
+//    playlistId: String,
+//    onDismiss: () -> Unit
+//) {
+//
+//
+//    if (selectedItem == null) return
+//    val video: VideoItem = selectedItem
+//    val bottomSheetState = rememberModalBottomSheetState()
+//
+//    val state by viewModel.uiState.collectAsState()
+//
+//    ModalBottomSheet(
+//        sheetState = bottomSheetState,
+//        onDismissRequest = { onDismiss() }
+//    ) {
+//        val context = LocalContext.current
+//        Column(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(15.dp)
+//                .verticalScroll(rememberScrollState()),
+//            horizontalAlignment = Alignment.Start,
+//            verticalArrangement = Arrangement.Center
+//        ) {
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.Start,
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                AsyncImage(
+//                    model = ImageRequest.Builder(LocalContext.current)
+//                        .data(video.thumbnailUrl)
+//                        .crossfade(true)
+//                        .build(),
+//                    contentDescription = null,
+//                    placeholder = painterResource(R.drawable.imageloader),
+//                    contentScale = ContentScale.Crop,
+//                    modifier = Modifier
+//                        .size(40.dp)
+//                        .clip(RoundedCornerShape(8.dp))
+//                )
+//                Spacer(modifier = Modifier.width(12.dp))
+//                Text(
+//                    video.title,
+//                    modifier = Modifier
+//                        .weight(1f),
+//                    color = MaterialTheme.colorScheme.onBackground,
+//                    fontSize = 11.sp,
+//                    maxLines = 2,
+//                    lineHeight = 15.sp,
+//                    overflow = TextOverflow.Ellipsis,
+//                )
+//                Spacer(Modifier.padding(start = 20.dp))
+//
+//                IconButton(
+//                    onClick = {
+//                        viewModel.addToDisLiked(video)
+//                        onDismiss()
+//                    },
+//                    modifier = Modifier.size(30.dp)
+//                ) {
+//                    val disLike = state.disLiked.contains(video)
+//                    Icon(
+//                        imageVector = if (disLike) Icons.Default.ThumbDown else Icons.Default.ThumbDownOffAlt,
+//                        contentDescription = null,
+//                        tint = MaterialTheme.colorScheme.onBackground,
+//                    )
+//                }
+//                Spacer(Modifier.padding(start = 10.dp))
+//                IconButton(
+//                    onClick = {
+//                        viewModel.addToFavourites(video)
+//                        onDismiss()
+//                    },
+//                    modifier = Modifier.size(30.dp)
+//                ) {
+//                    val isFavorite = state.favorites.contains(video)
+//                    Icon(
+//                        imageVector = if (isFavorite) Icons.Default.ThumbUp else Icons.Default.ThumbUpOffAlt,
+//                        contentDescription = null,
+//                    )
+//                }
+////                Spacer(Modifier.padding(start = 10.dp))
+//
+//
+//            }
+//            Spacer(modifier = Modifier.height(12.dp))
+//            HorizontalDivider()
+//
+//            Spacer(modifier = Modifier.padding(top = 12.dp))
+//
+//            TextButton(
+//                onClick = {
+//                    viewModel.removeFromSpecificPlaylist(playlistId = playlistId, video = video)
+//                    Toast.makeText(context, "Removed From List", Toast.LENGTH_SHORT).show()
+//                    onDismiss()
+//                },
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(53.dp),
+//
+//                colors = ButtonDefaults.textButtonColors(
+//                    containerColor = Color.Transparent,
+//                    contentColor = MaterialTheme.colorScheme.onBackground,
+//                )
+//
+//            ) {
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    verticalAlignment = Alignment.CenterVertically
+//                ) {
+//                    Icon(
+//                        imageVector = Icons.Default.Delete, contentDescription = null,
+//                        tint = MaterialTheme.colorScheme.onBackground
+//                    )
+//                    Spacer(modifier = Modifier.width(12.dp))
+//                    Text(
+//                        "Remove From List",
+//                        fontSize = 16.sp,
+//
+//                        textAlign = TextAlign.Start,
+//                        modifier = Modifier.fillMaxWidth()
+//                    )
+//                }
+//            }
+//
+//            DownloadAudioButton(context, video.title, video)
+//
+//            TextButton(
+//                onClick = {
+//                    viewModel.playNext(video)
+//                    Toast.makeText(context, "Will play next", Toast.LENGTH_SHORT).show()
+//                    onDismiss()
+//                },
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(53.dp),
+//                colors = ButtonDefaults.textButtonColors(
+//                    containerColor = Color.Transparent,
+//                    contentColor = MaterialTheme.colorScheme.onBackground,
+//                )
+//            ) {
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    verticalAlignment = Alignment.CenterVertically
+//                ) {
+//                    Icon(
+//                        imageVector = Icons.Default.QueuePlayNext, // icon for "play next"
+//                        contentDescription = null,
+//                        tint = MaterialTheme.colorScheme.onBackground
+//                    )
+//                    Spacer(modifier = Modifier.width(12.dp))
+//                    Text(
+//                        "Play Next",
+//                        fontSize = 16.sp,
+//                        textAlign = TextAlign.Start,
+//                        modifier = Modifier.fillMaxWidth()
+//                    )
+//                }
+//            }
+//
+//        }
+//    }
+//}
+//

@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -113,7 +114,7 @@ fun SingerScreen(singerName : String , navController: NavController , bottomNavC
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = null,
-                                placeholder = painterResource(R.drawable.imageloader),
+                                placeholder = ColorPainter(Color(0xFF1E1E1E)),
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .width(100.dp)

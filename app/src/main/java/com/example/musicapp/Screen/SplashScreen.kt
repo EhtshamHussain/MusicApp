@@ -24,7 +24,6 @@ fun SplashScreen(navController: NavController, viewModel: MusicViewModel) {
         Image(
             painter = painterResource(R.drawable.musicimage),
             contentDescription = null,
-
             contentScale = ContentScale.FillHeight,
             modifier = Modifier.fillMaxSize(),
         )

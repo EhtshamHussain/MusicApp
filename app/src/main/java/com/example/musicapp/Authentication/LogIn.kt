@@ -113,8 +113,7 @@ fun LogIn(navController: NavController,viewModel: MusicViewModel) {
                     },
                     modifier = Modifier
                         .fillMaxWidth(.9f)
-                        .clip(RoundedCornerShape(15.dp))
-                        .clickable { },
+                        .clip(RoundedCornerShape(15.dp)),
                     placeholder = {
                         Text(
                             "Enter Your Email",
@@ -170,8 +169,7 @@ fun LogIn(navController: NavController,viewModel: MusicViewModel) {
                     },
                     modifier = Modifier
                         .fillMaxWidth(.9f)
-                        .clip(RoundedCornerShape(15.dp))
-                        .clickable { },
+                        .clip(RoundedCornerShape(15.dp)),
                     placeholder = {
                         Text(
                             "Enter Password",
@@ -194,15 +192,15 @@ fun LogIn(navController: NavController,viewModel: MusicViewModel) {
 
                 Button(
                     onClick = {
-                        if(email != "" && password != "") {
+                        if(email.isNotEmpty() && password.isNotEmpty()) {
                             viewModel.logIn(email, password) { result,msg ->
-                                if (result==true) {
+                                if (result) {
                                     Toast.makeText(
                                         context,
                                         msg,
                                         Toast.LENGTH_SHORT
                                     ).show()
-                                    navController.navigate("MenuScreen"){
+                                    navController.navigate("MainScreen"){
                                         popUpTo("LogIn"){
                                             inclusive=true
                                         }

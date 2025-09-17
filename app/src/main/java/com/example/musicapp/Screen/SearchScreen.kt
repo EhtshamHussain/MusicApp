@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -64,12 +65,14 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -84,6 +87,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.size.Precision
 import com.example.musicapp.DownloadMusic.DownloadAudioButton
 import com.example.musicapp.Model.VideoItem
 import com.example.musicapp.MusicViewModel
@@ -92,8 +96,6 @@ import com.example.musicapp.SharedPreferences.SearchPrefManager
 import com.example.musicapp.ui.theme.DarkOnPrimary
 import com.example.musicapp.ui.theme.DarkPrimary
 import kotlinx.coroutines.Dispatchers
-import androidx.compose.foundation.lazy.rememberLazyListState  // Add this import
-import androidx.compose.runtime.snapshotFlow
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -204,6 +206,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                     unfocusedTextColor = Color.White,
                     focusedBorderColor = Color.Transparent,
                     unfocusedBorderColor = Color.Transparent,
+                    cursorColor = Color.White
                 )
 
             )
@@ -216,7 +219,10 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(50.dp)
+                )
             }
         } else {
             if (state.results.isEmpty()) {
@@ -249,8 +255,6 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(text = item, color = Color.White)
                             }
-
-
                             IconButton(onClick = {
                                 manager.deleteSearch(item)
                                 searches.remove(item)
@@ -264,7 +268,6 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                         }
                     }
                 }
-
 
             } else {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -301,9 +304,11 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                                         model = ImageRequest.Builder(LocalContext.current)
                                             .data(video.thumbnailUrl)
                                             .crossfade(true)
+//                                            .precision(Precision.EXACT)
                                             .build(),
                                         contentDescription = null,
-                                        placeholder = painterResource(R.drawable.imageloader),
+                                        placeholder = ColorPainter(Color(0xFF1E1E1E)),
+//                                        placeholder = painterResource(R.drawable.imageloader),
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .width(100.dp)
@@ -314,7 +319,7 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                                     Spacer(modifier = Modifier.width(12.dp))
 
                                     Column(
-                                        modifier = Modifier.weight(1f) // text ke liye jagah
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Text(
                                             text = video.title,
@@ -324,13 +329,11 @@ fun MusicPlayerScreen(viewModel: MusicViewModel, modifier: Modifier, navControll
                                             overflow = TextOverflow.Ellipsis
                                         )
                                     }
-
                                     IconButton(
                                         onClick = {
                                             showBottomSheet.value = true
                                             selectedItem = video
                                         }
-
                                     ) {
                                         Icon(
                                             Icons.Default.MoreVert,
@@ -504,7 +507,6 @@ fun MusicSheetContent(
                 ) {
 
                 FilledIconButton(
-
                     onClick = {
                         showPlayListContent()
                     },
@@ -555,7 +557,7 @@ fun MusicSheetContent(
                     )
                 }
                 Text(
-                    "Save to\n WatchLetter",
+                    "Save to \n WatchLetter",
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(top = 5.dp),
                     fontSize = 11.sp,
@@ -590,7 +592,7 @@ fun MusicSheetContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.QueuePlayNext, // icon for "play next"
+                    imageVector = Icons.Default.QueuePlayNext,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onBackground
                 )
@@ -614,6 +616,7 @@ fun MusicSheetContent(
 fun PlayListContent(video: VideoItem, viewModel: MusicViewModel, onClose: () -> Unit) {
     val state by viewModel.uiState.collectAsState()
     var openNewDialog by remember { mutableStateOf(false) }
+
     if (openNewDialog) {
         DialogBox(
             onClose = { openNewDialog = false },
@@ -622,91 +625,58 @@ fun PlayListContent(video: VideoItem, viewModel: MusicViewModel, onClose: () -> 
                 if (created != null) {
                     viewModel.addToSpecificPlaylist(created.id, video)
                     viewModel.addRecentPlaylist(created)
-//                    navController.navigate("PlaylistDetail/${created.id}")
                 }
             }
         )
     }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(15.dp)
-            .verticalScroll(rememberScrollState()),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                "Save to playlist",
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 16.sp
-            )
-            Icon(
-                Icons.Default.Close,
-                null,
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.clickable { onClose() })
-        }
-        Spacer(Modifier.height(12.dp))
-        HorizontalDivider()
-        Spacer(Modifier.height(12.dp))
-        // Liked Music
-        Row(
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Scrollable content
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    viewModel.addToFavourites(video)
-                    onClose()
-                },
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(15.dp)
         ) {
-            IconButton(
-                onClick = { /* handled in row */ },
-                Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFF2196F3))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    Icons.Default.Favorite,
-                    null,
-                    tint = Color.Blue,
-                    modifier = Modifier.size(35.dp)
-                )
-            }
-            Spacer(Modifier.width(8.dp))
-            Column {
                 Text(
-                    "Liked Music",
+                    "Save to playlist",
                     color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 16.sp
                 )
-                Text("${state.favorites.size} tracks", color = DarkOnPrimary)
+                Icon(
+                    Icons.Default.Close,
+                    null,
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.clickable { onClose() })
             }
-        }
-        Spacer(Modifier.height(12.dp))
-        // dynamic playlists
-        state.playlists.forEach { playlist ->
+
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(12.dp))
+
+            // Liked music section
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        viewModel.addToSpecificPlaylist(playlist.id, video)
+                        viewModel.addToFavourites(video)
                         onClose()
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { /* handled in row */ },
-                    Modifier
+                    onClick = {},
+                    modifier = Modifier
                         .size(60.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(Color(0xFF2196F3))
                 ) {
                     Icon(
-                        Icons.AutoMirrored.Filled.PlaylistAdd,
+                        Icons.Default.Favorite,
                         null,
                         tint = Color.Blue,
                         modifier = Modifier.size(35.dp)
@@ -715,37 +685,80 @@ fun PlayListContent(video: VideoItem, viewModel: MusicViewModel, onClose: () -> 
                 Spacer(Modifier.width(8.dp))
                 Column {
                     Text(
-                        playlist.name,
+                        "Liked Music",
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
-                    Text("${playlist.videos.size} tracks", color = DarkOnPrimary)
+                    Text("${state.favorites.size} tracks", color = DarkOnPrimary)
                 }
             }
+
             Spacer(Modifier.height(12.dp))
+
+            // dynamic playlists
+            state.playlists.forEach { playlist ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            viewModel.addToSpecificPlaylist(playlist.id, video)
+                            onClose()
+                        },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = {},
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF2196F3))
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.PlaylistAdd,
+                            null,
+                            tint = Color.Blue,
+                            modifier = Modifier.size(35.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            playlist.name,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                        Text("${playlist.videos.size} tracks", color = DarkOnPrimary)
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
         }
-// New button
+
+        // Floating "New" button
         Surface(
             modifier = Modifier
-                .width(120.dp)
-                .height(40.dp)
-                .align(Alignment.End)
+                .align(Alignment.CenterEnd )
+                .padding(16.dp)
+                .width(100.dp)
+                .height(45.dp)
                 .clickable { openNewDialog = true },
             color = MaterialTheme.colorScheme.onBackground,
-            shape = RoundedCornerShape(24.dp)
+            shape = RoundedCornerShape(24.dp),
+            shadowElevation = 6.dp
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(5.dp),
-                horizontalArrangement = Arrangement.Start,
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Add, null, tint = DarkOnPrimary, modifier = Modifier.size(30.dp))
+                Icon(Icons.Default.Add, null, tint = DarkOnPrimary, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(6.dp))
                 Text("New", color = DarkPrimary, fontSize = 15.sp)
             }
         }
     }
 }
+
 

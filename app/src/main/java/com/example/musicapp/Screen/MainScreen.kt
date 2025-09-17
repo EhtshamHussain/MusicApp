@@ -4,13 +4,13 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -23,10 +23,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.musicapp.MusicViewModel
 import com.example.musicapp.Model.navigationItem
+import com.example.musicapp.MusicViewModel
 import com.example.musicapp.SingerData.SingerScreen
-import com.example.musicapp.ui.theme.BottomBarColorYouTubeDark
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
@@ -48,7 +47,7 @@ fun MainScreen(navController: NavController,  viewModel: MusicViewModel) {
     }
     Scaffold(
         bottomBar = {
-            Column {
+            Column{
                 val state = viewModel.uiState.collectAsState().value
                 val currentRoute = navController.currentDestination?.route
                 if (state.currentPlaylist.isNotEmpty() && currentRoute != "PlayerScreen") {

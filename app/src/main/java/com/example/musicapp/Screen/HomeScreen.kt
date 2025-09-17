@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -31,6 +32,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +57,7 @@ import com.example.musicapp.ui.theme.DarkOnBackground
 fun HomeScreen(navController: NavController , bottomNavController: NavController,
                viewModel: MusicViewModel) {
     val state by viewModel.uiState.collectAsState()
+    Log.d("email", "HomeScreen: ${viewModel.email}")
     Scaffold(
         modifier = Modifier.fillMaxWidth(),
         topBar = {
@@ -82,10 +85,12 @@ fun HomeScreen(navController: NavController , bottomNavController: NavController
                 )
         }
     ) { innerPadding ->
+        val listState = rememberLazyListState()
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(innerPadding, ),
+            state = listState
         ) {
             item {
                 RecentInteractionsSection(
@@ -167,6 +172,7 @@ fun DialogBox(
                         Text("title")
                     },
                     colors = TextFieldDefaults.colors(
+                        cursorColor = Color.White,
                         focusedContainerColor = Color.Transparent,
                         focusedIndicatorColor = DarkOnBackground,
                         unfocusedContainerColor = BottomBarColorYouTubeDark
@@ -178,6 +184,7 @@ fun DialogBox(
                         Text("description")
                     },
                     colors = TextFieldDefaults.colors(
+                        cursorColor = Color.White,
                         focusedContainerColor = Color.Transparent,
                         focusedIndicatorColor = DarkOnBackground,
                         unfocusedContainerColor = BottomBarColorYouTubeDark

@@ -4,7 +4,6 @@ package com.example.musicapp
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -26,18 +25,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import org.schabi.newpipe.extractor.InfoItem
-import org.schabi.newpipe.extractor.ListExtractor
 import org.schabi.newpipe.extractor.Page
 import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
-import org.schabi.newpipe.extractor.timeago.patterns.pl
 import java.util.UUID
 
 class MusicViewModel(private val context: Context) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState
+
 
     private var isSeeking = false // New flag to track seeking
 
@@ -47,6 +44,10 @@ class MusicViewModel(private val context: Context) : ViewModel() {
 
     //Firebse
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    val user = FirebaseAuth.getInstance().currentUser
+    val email = user?.email
+
+    val isLoggedIn = mutableStateOf(user != null)
     private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
     private val currentUserId: String? get() = auth.currentUser?.uid
 
@@ -351,6 +352,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         index: Int,
         showLoading: Boolean = true
     ) {
+
         viewModelScope.launch {
             if (showLoading) {
                 _uiState.value = _uiState.value.copy(
@@ -361,13 +363,11 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                     currentPlaylist = playlist, currentIndex = index
                 )
             }
-//            _progress.value = 0f
             try {
                 val audioUrl = getAudioUrl(videoId)
                 if (exoPlayer == null) {
                     exoPlayer = ExoPlayer.Builder(context).build()
                 }
-
                 exoPlayer?.apply {
                     stop()
                     clearMediaItems()
@@ -402,12 +402,8 @@ class MusicViewModel(private val context: Context) : ViewModel() {
     fun seekTo(position: Long) {
         isSeeking = true // Set flag before seeking
         exoPlayer?.seekTo(position)
-//        exoPlayer?.duration?.let { duration ->
-//            if (duration > 0) _progress.value = position.toFloat() / duration.toFloat()
-//        }
         _uiState.value = _uiState.value.copy(isPlaying = exoPlayer?.isPlaying ?: false)
         viewModelScope.launch {
-            // Reset isSeeking after a short delay to account for buffering
             delay(500) // Adjust delay if needed
             isSeeking = false
         }
@@ -489,8 +485,14 @@ class MusicViewModel(private val context: Context) : ViewModel() {
             result(false, "Enter valid email & min 6-char password")
             return
         }
-        auth.signInWithEmailAndPassword(email, password).addOnCompleteListener {
-            result(it.isSuccessful, "LogIn Successfully")
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    result(true, "LogIn Successfully")
+                } else {
+                    val errorMsg = task.exception?.localizedMessage ?: "Login failed"
+                    result(false, errorMsg)
+                }
         }
     }
 
@@ -557,6 +559,26 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         saveListToFirestore("favorites", currentList)
 
     }
+
+    fun removeFromFavourites(videoId : String) {
+        val favourite = _uiState.value.favorites.toMutableList()
+        if(favourite.any{it.videoId == videoId}){
+        favourite.removeAll { it.videoId == videoId }
+        }
+        _uiState.value = _uiState.value.copy(favorites = favourite)
+        saveListToFirestore("favorites", favourite)
+    }
+
+    fun removeFromHistory(videoId : String) {
+        val recentPlayed = _uiState.value.recentlyPlayed.toMutableList()
+        if(recentPlayed.any{it.videoId == videoId}){
+            recentPlayed.removeAll { it.videoId == videoId }
+        }
+        _uiState.value = _uiState.value.copy(recentlyPlayed = recentPlayed)
+        saveListToFirestore("recentlyPlayed", recentPlayed)
+    }
+
+
 
 
     fun createPlaylist(
@@ -634,6 +656,8 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         )
         savePlaylistsToFirestore(updatedPlaylists)
     }
+
+
 
     fun playNext(video: VideoItem) {
         val currentPlaylist = _uiState.value.currentPlaylist.toMutableList()

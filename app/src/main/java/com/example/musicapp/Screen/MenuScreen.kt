@@ -2,7 +2,9 @@ package com.example.musicapp.Screen
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -55,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.insets.GradientProtection
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -75,13 +79,28 @@ fun MenuScreen(
     val state by viewModel.uiState.collectAsState()
     var openDialog by remember { mutableStateOf(false) }
 
+    val scrollState = rememberScrollState()
+
+    val isScrolled by remember {
+        derivedStateOf {
+            scrollState.value>0
+        }
+
+    }
+
+    val targetWidth by animateDpAsState(
+        targetValue = if (isScrolled) 66.dp else 120.dp,
+        label = "widthAnim"
+    )
+    val targetShape by animateDpAsState(
+        targetValue = if (isScrolled) 50.dp else 24.dp,
+        label = "shapeAnim"
+    )
+
     Scaffold(
-        modifier = Modifier.fillMaxWidth(), topBar = {
+        topBar = {
             TopAppBar(
-                modifier = Modifier.fillMaxWidth(),
-                title = {
-                    Text("Library", color = MaterialTheme.colorScheme.onBackground)
-                },
+                title = { Text("Library", color = MaterialTheme.colorScheme.onBackground) },
                 actions = {
                     Icon(
                         imageVector = Icons.Default.History,
@@ -91,12 +110,9 @@ fun MenuScreen(
                             .size(40.dp)
                             .padding(end = 10.dp)
                             .clickable {
-//                             viewModel.selecteTab.value=1
                                 libraryNavController.navigate("HistoryScreen")
                             }
-
                     )
-
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = null,
@@ -105,113 +121,75 @@ fun MenuScreen(
                             .size(40.dp)
                             .padding(end = 10.dp)
                             .clickable { navController.navigate("SearchScreen") }
-
                     )
                 },
-
-
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                ),
-
-
-                )
-        }) { innerPadding ->
-
-        val scrollState = rememberScrollState()
-
-// only recomposes when threshold cross hota hai
-        val isScrolled by remember {
-            derivedStateOf { scrollState.value > 50 }
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            )
         }
+    ) { innerPadding ->
 
-
-        val targetWidth by animateDpAsState(
-            targetValue = if (scrollState.value > 50) 56.dp else 120.dp,
-            label = "widthAnim"
-        )
-
-        val targetShape by animateDpAsState(
-            targetValue = if (scrollState.value > 50) 28.dp else 24.dp,
-            label = "shapeAnim"
-        )
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-
-                .verticalScroll(scrollState)
-                .background(
-                    MaterialTheme.colorScheme.background
-                )
-//                .padding(bottom = 60.dp)
-
+                .padding(bottom = 40.dp),
+            contentAlignment = Alignment.BottomEnd
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Box(
+            // Scrollable playlists
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 18.dp),
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(scrollState)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
+                Spacer(Modifier.height(20.dp))
+
+                // Liked Music
                 Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.Start,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 18.dp)
+                        .clickable { libraryNavController.navigate("Favourite") },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
                         onClick = { libraryNavController.navigate("Favourite") },
-                        Modifier
+                        modifier = Modifier
                             .size(60.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(color = Color(0x1CDBD6D2))
+                            .background(Color(0x1CDBD6D2))
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Favorite, // 👈 built-in Like icon
-                            contentDescription = "Favorite ",
-                            tint = MaterialTheme.colorScheme.onBackground, // color change kar sakte ho
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = "Favorite",
+                            tint = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.size(35.dp)
                         )
                     }
                     Spacer(Modifier.width(8.dp))
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                libraryNavController.navigate("Favourite")
-                            },
-                    ) {
+                    Column {
                         Text(
                             "Liked Music",
                             color = MaterialTheme.colorScheme.onBackground,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            modifier = Modifier
+                            fontSize = 18.sp
                         )
                         Text("Auto playlist", color = DarkOnPrimary)
                     }
-
                 }
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(Modifier.height(20.dp))
 
-
-            // dynamic playlists
-            state.playlists.forEach { playlist ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 18.dp,),
-                ) {
+                // Dynamic playlists
+                state.playlists.forEach { playlist ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(start = 18.dp)
                             .clickable {
                                 libraryNavController.navigate("PlaylistDetail/${playlist.id}")
                                 viewModel.addRecentPlaylist(playlist)
-                            }, // ✅ Single clickable for entire row
-                        horizontalArrangement = Arrangement.Start,
+                            },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -223,6 +201,7 @@ fun MenuScreen(
                                 AsyncImage(
                                     model = playlist.videos.first().thumbnailUrl,
                                     contentDescription = null,
+                                    placeholder = ColorPainter(Color(0xFF1E1E1E)),
                                     modifier = Modifier.matchParentSize(),
                                     contentScale = ContentScale.Crop
                                 )
@@ -239,11 +218,10 @@ fun MenuScreen(
                                         )
                                 )
                             } else {
-                                // Default background for empty playlist
                                 Box(
                                     modifier = Modifier
                                         .matchParentSize()
-                                        .background(color = Color(0x1CDBD6D2)),
+                                        .background(Color(0x1CDBD6D2)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -255,84 +233,67 @@ fun MenuScreen(
                                 }
                             }
                         }
-
                         Spacer(Modifier.width(8.dp))
-
-                        Column(
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        Column(Modifier.weight(1f)) {
                             Text(
                                 playlist.name,
                                 color = MaterialTheme.colorScheme.onBackground,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
                             )
-                            Text(
-                                playlist.description,
-                                color = DarkOnPrimary
-                            )
+                            Text(playlist.description, color = DarkOnPrimary)
                         }
                     }
+                    Spacer(Modifier.height(20.dp))
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
-            }
+                Spacer(Modifier.height(80.dp))
 
-            Spacer(modifier = Modifier.height(80.dp))
-
-            if (openDialog) {
-                DialogBox(onClose = {
-                    openDialog = false
-                }, onCreate = { name, description ->
-                    val created = viewModel.createPlaylist(name, description)
-                    if (created != null) {
-                        libraryNavController.navigate("PlaylistDetail/${created.id}")
-                        viewModel.addRecentPlaylist(created)
-                    }
-                })
-
-            }
-        }
-        Box(modifier = Modifier.fillMaxSize()
-            .padding(bottom = 40.dp),
-            contentAlignment = Alignment.BottomEnd,
-            ){
-        Surface(
-            modifier = Modifier
-                .width(targetWidth)
-                .clickable {
-                    openDialog = true
+                // New playlist dialog
+                AnimatedVisibility(openDialog) {
+                    DialogBox(
+                        onClose = { openDialog = false },
+                        onCreate = { name, description ->
+                            val created = viewModel.createPlaylist(name, description)
+                            if (created != null) {
+                                libraryNavController.navigate("PlaylistDetail/${created.id}")
+                                viewModel.addRecentPlaylist(created)
+                            }
+                        }
+                    )
                 }
-                .padding(end = 18.dp,)
-                .height(50.dp)
-//                .align(Alignment.TopEnd)
-            ,
-            color = MaterialTheme.colorScheme.onBackground,
-            shape = RoundedCornerShape(targetShape)
-        ) {
-            Row(
+            }
+
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(5.dp),
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(end = 18.dp)
+                    .width(targetWidth)
+                    .height(50.dp)
+                    .align(Alignment.BottomEnd),
+                color = MaterialTheme.colorScheme.onBackground,
+                shape = RoundedCornerShape(targetShape),
+                onClick = { openDialog = true }
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = DarkOnPrimary,
-                    modifier = Modifier.size(30.dp)
-                )
-
-                if (scrollState.value < 50) {
-                    Spacer(Modifier.width(4.dp))
-                    Text("New", color = DarkPrimary, fontSize = 15.sp)
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = DarkOnPrimary,
+                        modifier = Modifier.size(30.dp)
+                    )
+                    if (scrollState.value < 50) {
+                        Text("New", color = DarkPrimary, fontSize = 15.sp)
+                    }
                 }
             }
-        }
         }
     }
 }
+
 
 @Composable
 fun PlayingItem(
@@ -350,7 +311,7 @@ fun PlayingItem(
             model = ImageRequest.Builder(LocalContext.current).data(thumnail).crossfade(true)
                 .build(),
             contentDescription = null,
-            placeholder = painterResource(R.drawable.imageloader),
+            placeholder = ColorPainter(Color(0xFF1E1E1E)),
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .width(100.dp)
@@ -365,7 +326,7 @@ fun PlayingItem(
         )
 
         Column(
-            modifier = Modifier.weight(1f) // text ke liye jagah
+            modifier = Modifier.weight(1f)
         ) {
             Text(
                 text = title,
@@ -391,5 +352,3 @@ fun PlayingItem(
         }
     }
 }
-
-

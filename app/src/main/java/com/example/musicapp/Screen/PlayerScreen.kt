@@ -35,6 +35,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -115,20 +116,28 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                         }
                     }) {
                         val currentVideo = state.currentPlaylist.getOrNull(state.currentIndex)
-                        val isFavorite = currentVideo != null && state.favorites.any { it.videoId == currentVideo.videoId }
+                        val isFavorite =
+                            currentVideo != null && state.favorites.any { it.videoId == currentVideo.videoId }
 
                         Icon(
                             imageVector = if (isFavorite) Icons.Default.Favorite else
                                 Icons.Default.FavoriteBorder,
                             contentDescription = "Favourite",
                             modifier = Modifier.size(32.dp),
-                            tint = if(isFavorite) Color(0xFFFA5B02) else MaterialTheme.colorScheme.onBackground
+                            tint = if (isFavorite) Color(0xFFFA5B02) else MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         }) { innerPadding ->
 
+        val alpha by remember {
+            derivedStateOf {
+                if (offsetY.value <= 0f) 1f
+                else if (offsetY.value >= 300f) 0f
+                else 1f - (offsetY.value / 300f)
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -153,27 +162,28 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                 }), horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (state.isLoading == true) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .padding(16.dp),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize(.5f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(60.dp),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
             } else {
                 Box {
-
-
                     AsyncImage(
                         model = imageRequest,
                         contentDescription = null,
-                        placeholder = painterResource(R.drawable.imageloader),
-                        error = painterResource(R.drawable.imageloader), // important
+                        placeholder = ColorPainter(Color(0xFF1E1E1E)),
+                        error = painterResource(R.drawable.imageloader),
                         contentScale = ContentScale.FillWidth,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(330.dp)
                             .padding(10.dp)
-
                     )
                 }
 
@@ -188,116 +198,81 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                         .basicMarquee(),
                     textAlign = TextAlign.Center
                 )
+            }
+            // Ye ha integration: Slider remove kar k CustomSeekBar add kiya
+            val progress by viewModel.progress.collectAsState()
 
-//                var progress by remember { mutableStateOf(0f) }
-//                LaunchedEffect(viewModel.exoPlayer) {
-//                    while (viewModel.exoPlayer != null) {
-//                        progress = (viewModel.exoPlayer?.currentPosition?.toFloat()
-//                            ?: 0f) / (viewModel.exoPlayer?.duration?.toFloat() ?: 1f)
-//                        delay(100)
-//                    }
-//                }
-
-////                }
-//                var progress by remember { mutableStateOf(0f) }
-//                LaunchedEffect(Unit) { // Unit = always survive recompositions
-//                    while (true) {
-//                        viewModel.exoPlayer?.let {
-//                            progress =
-//                                (it.currentPosition.toFloat()) / (it.duration.takeIf { d -> d > 0 }
-//                                    ?.toFloat() ?: 1f)
-//                        }
-//                        delay(100)
-//                    }
-//                }
-                Log.d("check", "PlayerScreen: ${viewModel.progress}")
-
-                val progress by viewModel.progress.collectAsState()
-
-                Slider(
-                    value = progress,
-                    onValueChange = { newValue ->
-                        viewModel.seekTo(
-                            (newValue * (viewModel.exoPlayer?.duration ?: 1L)).toLong()
-                        )
-//                        view = newValue
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .align(Alignment.CenterHorizontally),
-                    thumb = {
-                        SliderDefaults.Thumb(
-                            interactionSource = remember { MutableInteractionSource() },
-                            thumbSize = DpSize(10.dp, 10.dp),
-                            colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.onBackground
-                            )
-                        )
-                    },
-                    colors = SliderDefaults.colors(
-                        activeTrackColor = Color.Green, inactiveTrackColor = Color.Gray
-                    )
-                )
-
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(.9f)
-                        .padding(horizontal = 19.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = formatTime(viewModel.exoPlayer?.currentPosition ?: 0L),
-                        color = Color.White
-                    )
-                    Text(
-                        text = formatTime(viewModel.exoPlayer?.duration ?: 1L), color = Color.White
+            CustomSeekBar(
+                progress = progress,
+                bufferProgress = 0f,  // Agar buffering add karna ha to viewModel se lo
+                onProgressChange = { newValue ->
+                    viewModel.seekTo(
+                        (newValue * (viewModel.exoPlayer?.duration ?: 1L)).toLong()
                     )
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(.9f)
+                    .padding(horizontal = 19.dp)
+                    .alpha(alpha),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = formatTime(viewModel.exoPlayer?.currentPosition ?: 0L),
+                    color = Color.White
+                )
+                Text(
+                    text = formatTime(viewModel.exoPlayer?.duration ?: 1L), color = Color.White
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .alpha(alpha),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { viewModel.playPrevious() }) {
+                    Icon(
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = "Previous",
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+                Spacer(modifier = Modifier.width(20.dp))
+                IconButton(
+                    onClick = {
+                        if (viewModel.exoPlayer?.isPlaying == true) viewModel.pause() else viewModel.resume()
+                    },
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF304FFE), Color(0xFF00B8D4))
+                            ), shape = CircleShape
+                        ),
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent)
                 ) {
-                    IconButton(onClick = { viewModel.playPrevious() }) {
-                        Icon(
-                            imageVector = Icons.Default.SkipPrevious,
-                            contentDescription = "Previous",
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(20.dp))
-                    IconButton(
-                        onClick = {
-                            if (viewModel.exoPlayer?.isPlaying == true) viewModel.pause() else viewModel.resume()
-                        },
-                        modifier = Modifier
-                            .size(80.dp)
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(Color(0xFF304FFE), Color(0xFF00B8D4))
-                                ), shape = CircleShape
-                            ),
-                        colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent)
-                    ) {
-                        Icon(
-                            imageVector = if (viewModel.exoPlayer?.isPlaying == true) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "Play/Pause",
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(20.dp))
-                    IconButton(onClick = { viewModel.playNext() }) {
-                        Icon(
-                            imageVector = Icons.Default.SkipNext,
-                            contentDescription = "Next",
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
+                    Icon(
+                        imageVector = if (viewModel.exoPlayer?.isPlaying == true) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = "Play/Pause",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(20.dp))
+                IconButton(onClick = { viewModel.playNext() }) {
+                    Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Next",
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
                 }
             }
+
         }
     }
 }
@@ -334,13 +309,12 @@ fun MiniPlayer(viewModel: MusicViewModel, onExpand: () -> Unit) {
                 text = currentVideo.title,
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 16.sp,
-//                maxLines = 1,
                 modifier = Modifier
                     .weight(1f)
                     .basicMarquee()
             )
 
-//        }
+
             IconButton(onClick = {
                 if (viewModel.exoPlayer?.isPlaying == true) viewModel.pause() else viewModel.resume()
             }) {
@@ -351,16 +325,6 @@ fun MiniPlayer(viewModel: MusicViewModel, onExpand: () -> Unit) {
                 )
             }
         }
-//        var progress by remember { mutableStateOf(0f) }
-//        LaunchedEffect(Unit) { // Unit = always survive recompositions
-//            while (true) {
-//                viewModel.exoPlayer?.let {
-//                    progress = (it.currentPosition.toFloat()) / (it.duration.takeIf { d -> d > 0 }
-//                        ?.toFloat() ?: 1f)
-//                }
-//                delay(100)
-//            }
-//        }
         val progress by viewModel.progress.collectAsState()
 
         Log.d("check", "PlayerScreen: ${viewModel.progress}")
@@ -373,14 +337,22 @@ fun MiniPlayer(viewModel: MusicViewModel, onExpand: () -> Unit) {
             trackColor = MaterialTheme.colorScheme.primary,
             strokeCap = ProgressIndicatorDefaults.CircularDeterminateStrokeCap,
         )
+        //CustomSeekBar(progress,) { }
     }
 }
 
 // Your existing formatTime and abc preview remain the same...
-fun formatTime(milliseconds: Long): String {
-    val seconds = (milliseconds / 1000) % 60
-    val minutes = (milliseconds / (1000 * 60)) % 60
-    return String.format("%02d:%02d", minutes, seconds)
+//fun formatTime(milliseconds: Long): String {
+//    val seconds = (milliseconds / 1000) % 60
+//    val minutes = (milliseconds / (1000 * 60)) % 60
+//    return String.format("%02d:%02d", minutes, seconds)
+//}
+fun formatTime(ms: Long): String {
+    if (ms < 0) return "0:00"
+    val totalSeconds = ms / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return String.format("%d:%02d", minutes, seconds)
 }
 
 
@@ -396,7 +368,8 @@ fun CustomSeekBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp) // enough height for touch area
+            .height(40.dp)
+            .padding(start = 10.dp, end = 10.dp)
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val newProgress = (offset.x / size.width).coerceIn(0f, 1f)
@@ -411,7 +384,6 @@ fun CustomSeekBar(
             }) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val barY = size.height / 2
-
             // background track (grey)
             drawRoundRect(
                 color = Color.Gray.copy(alpha = 0.4f),

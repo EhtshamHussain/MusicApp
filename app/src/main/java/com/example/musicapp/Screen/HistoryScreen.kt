@@ -1,5 +1,7 @@
 package com.example.musicapp.Screen
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -24,12 +26,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.musicapp.EnumRemoveList.RemoveType
+import com.example.musicapp.Model.VideoItem
 import com.example.musicapp.MusicViewModel
 
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
@@ -38,7 +44,7 @@ fun HistoryScreen(
     viewModel: MusicViewModel
 ) {
     val bottomSheet = remember {mutableStateOf(false)  }
-
+    var video by remember { mutableStateOf<VideoItem?>(null) }
     val state by viewModel.uiState.collectAsState()
     Scaffold(
         modifier = Modifier.fillMaxWidth(),
@@ -91,16 +97,25 @@ fun HistoryScreen(
                         it.title,
                         it.thumbnailUrl ?: "",
                         onClick = {
-
                             val index = state.recentlyPlayed.indexOf(it)
                             viewModel.playVideo(it.videoId, state.recentlyPlayed, index)
                             navController.navigate("PlayerScreen")
                         },
-                        onOpen = {bottomSheet}
+                        onOpen = {
+                            video = it
+                            bottomSheet.value = true}
                     )
                 }
             }
     }
+        if(bottomSheet.value){
+            BottomSheet(
+                selectedItem = video,
+                viewModel = viewModel,
+                removeType = RemoveType.HISTORY,
+                onDismiss = { bottomSheet.value = false}
+            )
+        }
 }
 }
 
