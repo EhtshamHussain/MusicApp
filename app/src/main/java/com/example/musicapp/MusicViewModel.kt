@@ -5,7 +5,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -250,7 +254,8 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         val currentNextPage = _uiState.value.nextPage ?: return
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val extractor = ServiceList.YouTube.getSearchExtractor("${_uiState.value.searchQuery} music")  // Query reuse
+                val extractor =
+                    ServiceList.YouTube.getSearchExtractor("${_uiState.value.searchQuery} music")  // Query reuse
                 val page = extractor.getPage(currentNextPage)
                 val items = page.items.filterIsInstance<StreamInfoItem>()
                 val newResults = items.map {
@@ -272,6 +277,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
             }
         }
     }
+
     fun clearSearchResults() {
         _uiState.value = _uiState.value.copy(
             results = emptyList(),
@@ -493,7 +499,7 @@ class MusicViewModel(private val context: Context) : ViewModel() {
                     val errorMsg = task.exception?.localizedMessage ?: "Login failed"
                     result(false, errorMsg)
                 }
-        }
+            }
     }
 
     fun isLoggedIn(): Boolean = auth.currentUser != null
@@ -560,25 +566,23 @@ class MusicViewModel(private val context: Context) : ViewModel() {
 
     }
 
-    fun removeFromFavourites(videoId : String) {
+    fun removeFromFavourites(videoId: String) {
         val favourite = _uiState.value.favorites.toMutableList()
-        if(favourite.any{it.videoId == videoId}){
-        favourite.removeAll { it.videoId == videoId }
+        if (favourite.any { it.videoId == videoId }) {
+            favourite.removeAll { it.videoId == videoId }
         }
         _uiState.value = _uiState.value.copy(favorites = favourite)
         saveListToFirestore("favorites", favourite)
     }
 
-    fun removeFromHistory(videoId : String) {
+    fun removeFromHistory(videoId: String) {
         val recentPlayed = _uiState.value.recentlyPlayed.toMutableList()
-        if(recentPlayed.any{it.videoId == videoId}){
+        if (recentPlayed.any { it.videoId == videoId }) {
             recentPlayed.removeAll { it.videoId == videoId }
         }
         _uiState.value = _uiState.value.copy(recentlyPlayed = recentPlayed)
         saveListToFirestore("recentlyPlayed", recentPlayed)
     }
-
-
 
 
     fun createPlaylist(
@@ -656,7 +660,6 @@ class MusicViewModel(private val context: Context) : ViewModel() {
         )
         savePlaylistsToFirestore(updatedPlaylists)
     }
-
 
 
     fun playNext(video: VideoItem) {
@@ -744,6 +747,8 @@ class MusicViewModel(private val context: Context) : ViewModel() {
             }
         }
     }
+
+
 }
 
 data class UiState(

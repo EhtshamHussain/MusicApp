@@ -32,7 +32,7 @@ import com.example.musicapp.SingerData.SingerScreen
 fun MainScreen(navController: NavController,  viewModel: MusicViewModel) {
     val selectedIndex = viewModel.selecteTab
     val bottomNavController = rememberNavController()
-//    val bottomNavController = bottomNavController
+
 
     val navBackStackEntry = bottomNavController.currentBackStackEntryAsState()
     val currentDestination  = navBackStackEntry.value?.destination?.route

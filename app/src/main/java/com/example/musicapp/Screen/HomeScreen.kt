@@ -54,8 +54,10 @@ import com.example.musicapp.ui.theme.DarkOnBackground
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController , bottomNavController: NavController,
-               viewModel: MusicViewModel) {
+fun HomeScreen(
+    navController: NavController, bottomNavController: NavController,
+    viewModel: MusicViewModel
+) {
     val state by viewModel.uiState.collectAsState()
     Log.d("email", "HomeScreen: ${viewModel.email}")
     Scaffold(
@@ -89,7 +91,7 @@ fun HomeScreen(navController: NavController , bottomNavController: NavController
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding, ),
+                .padding(innerPadding),
             state = listState
         ) {
             item {
@@ -121,7 +123,7 @@ fun HomeScreen(navController: NavController , bottomNavController: NavController
 //                Spacer(modifier = Modifier.padding(top = 22.dp))
 
 
-                topSingersRow(){singer ->
+                topSingersRow() { singer ->
 //                    Log.d("name", "HomeScreen: ${singer.name}")
                     viewModel.updateSearch(singer.name)
                     bottomNavController.navigate("SingerScreen/${singer.name}")
@@ -134,18 +136,17 @@ fun HomeScreen(navController: NavController , bottomNavController: NavController
 }
 
 
-
 @Composable
 fun DialogBox(
     onClose: () -> Unit,
-    onCreate: (String , String) -> Unit,
+    onCreate: (String, String) -> Unit,
 
-    ){
+    ) {
     var name by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
     Dialog(
         onDismissRequest = {
-         onClose.invoke()
+            onClose.invoke()
         }
     ) {
         Surface(
@@ -166,7 +167,8 @@ fun DialogBox(
                     fontWeight = FontWeight.Bold
                 )
 
-                TextField(value = name, onValueChange = {name=it},
+                TextField(
+                    value = name, onValueChange = { name = it },
 
                     placeholder = {
                         Text("title")
@@ -176,10 +178,12 @@ fun DialogBox(
                         focusedContainerColor = Color.Transparent,
                         focusedIndicatorColor = DarkOnBackground,
                         unfocusedContainerColor = BottomBarColorYouTubeDark
-                    ))
+                    )
+                )
 
 
-                TextField(value = desc, onValueChange = {desc=it},
+                TextField(
+                    value = desc, onValueChange = { desc = it },
                     placeholder = {
                         Text("description")
                     },
@@ -188,26 +192,30 @@ fun DialogBox(
                         focusedContainerColor = Color.Transparent,
                         focusedIndicatorColor = DarkOnBackground,
                         unfocusedContainerColor = BottomBarColorYouTubeDark
-                    ))
+                    )
+                )
 
                 Spacer(Modifier.height(22.dp))
-                Row(Modifier
-                    .fillMaxWidth()
-                    .padding(end = 16.dp),
-                    horizontalArrangement = Arrangement.End) {
-                    OutlinedButton(onClick = {onClose()}) {
-                        Text("Cancel",color = DarkOnBackground)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(end = 16.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    OutlinedButton(onClick = { onClose() }) {
+                        Text("Cancel", color = DarkOnBackground)
                     }
                     Spacer(Modifier.width(12.dp))
                     Button(
                         onClick = {
-                            onCreate(name,desc)
+                            onCreate(name, desc)
                             onClose()
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.onBackground
-                        )) {
-                        Text("Create",color = MaterialTheme.colorScheme.background)
+                        )
+                    ) {
+                        Text("Create", color = MaterialTheme.colorScheme.background)
                     }
                 }
             }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsEndWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -71,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
@@ -383,6 +385,7 @@ fun MusicSheet(
     selectedItem: VideoItem? = VideoItem("", "", ""),
 
     ) {
+    val context = LocalContext.current
     var showPlayListSheet by remember { mutableStateOf(false) }
     val video: VideoItem = selectedItem ?: return
     ModalBottomSheet(
@@ -489,8 +492,6 @@ fun MusicSheetContent(
                     contentDescription = null,
                 )
             }
-//                Spacer(Modifier.padding(start = 10.dp))
-
 
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -616,15 +617,19 @@ fun MusicSheetContent(
 fun PlayListContent(video: VideoItem, viewModel: MusicViewModel, onClose: () -> Unit) {
     val state by viewModel.uiState.collectAsState()
     var openNewDialog by remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
     if (openNewDialog) {
         DialogBox(
-            onClose = { openNewDialog = false },
+            onClose = {
+                openNewDialog = false
+                onClose()
+            },
             onCreate = { name, description ->
                 val created = viewModel.createPlaylist(name, description)
                 if (created != null) {
                     viewModel.addToSpecificPlaylist(created.id, video)
                     viewModel.addRecentPlaylist(created)
+                    Toast.makeText(context, "Music added", Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -651,7 +656,11 @@ fun PlayListContent(video: VideoItem, viewModel: MusicViewModel, onClose: () -> 
                     Icons.Default.Close,
                     null,
                     tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.clickable { onClose() })
+                    modifier = Modifier.clickable {
+                        onClose()
+
+                    }
+                )
             }
 
             Spacer(Modifier.height(12.dp))
@@ -669,16 +678,19 @@ fun PlayListContent(video: VideoItem, viewModel: MusicViewModel, onClose: () -> 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = {},
+                    onClick = {
+                        Toast.makeText(context, "Music added", Toast.LENGTH_SHORT).show()
+                        onClose()
+                    },
                     modifier = Modifier
                         .size(60.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFF2196F3))
+                        .background(Color(0x1CDBD6D2))
                 ) {
                     Icon(
                         Icons.Default.Favorite,
                         null,
-                        tint = Color.Blue,
+                        tint = Color.White,
                         modifier = Modifier.size(35.dp)
                     )
                 }
@@ -704,22 +716,50 @@ fun PlayListContent(video: VideoItem, viewModel: MusicViewModel, onClose: () -> 
                         .clickable {
                             viewModel.addToSpecificPlaylist(playlist.id, video)
                             onClose()
+                            Toast.makeText(context, "Music added", Toast.LENGTH_SHORT).show()
                         },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = {},
+                    Box(
                         modifier = Modifier
                             .size(60.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF2196F3))
                     ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.PlaylistAdd,
-                            null,
-                            tint = Color.Blue,
-                            modifier = Modifier.size(35.dp)
-                        )
+                        if (playlist.videos.isNotEmpty()) {
+                            AsyncImage(
+                                model = playlist.videos.first().thumbnailUrl,
+                                contentDescription = null,
+                                placeholder = ColorPainter(Color(0xFF1E1E1E)),
+                                modifier = Modifier.matchParentSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color.Black.copy(alpha = 0.2f),
+                                                Color.Transparent
+                                            )
+                                        )
+                                    )
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .background(Color(0x1CDBD6D2)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                    contentDescription = "Playlist ${playlist.name}",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                        }
                     }
                     Spacer(Modifier.width(8.dp))
                     Column {
@@ -739,8 +779,8 @@ fun PlayListContent(video: VideoItem, viewModel: MusicViewModel, onClose: () -> 
         // Floating "New" button
         Surface(
             modifier = Modifier
-                .align(Alignment.CenterEnd )
-                .padding(16.dp)
+                .align(Alignment.TopEnd)
+                .padding(top=250.dp , end=16.dp)
                 .width(100.dp)
                 .height(45.dp)
                 .clickable { openNewDialog = true },

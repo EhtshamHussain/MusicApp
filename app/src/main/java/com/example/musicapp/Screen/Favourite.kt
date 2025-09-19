@@ -124,6 +124,7 @@ fun Favourite(
                         it.title,
                         it.thumbnailUrl ?: "",
                         onClick = {
+                            viewModel.addRecentVideo(it)
                         val index = state.favorites.indexOf(it)
                         viewModel.playVideo(it.videoId, state.favorites, index)
                         navController.navigate("PlayerScreen")

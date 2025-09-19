@@ -1,8 +1,10 @@
 package com.example.musicapp.Screen
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.text.Layout
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -52,10 +54,12 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.musicapp.MusicViewModel
 import com.example.musicapp.R
+import com.example.musicapp.playerItems
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @SuppressLint("RememberReturnType")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 //@Preview(device = "spec:width=1080dp,height=2340dp,dpi=440,isRound=false,chinSize=0dp")
@@ -100,7 +104,17 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                         textAlign = TextAlign.Center
                     )
                 }, navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        val poped = navController.popBackStack()
+                        if (!poped) {
+                            navController.navigate("MainScreen") {
+                                popUpTo("MainScreen") {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = "Minimize",
@@ -198,6 +212,10 @@ fun PlayerScreen(viewModel: MusicViewModel, navController: NavController) {
                         .basicMarquee(),
                     textAlign = TextAlign.Center
                 )
+
+                Spacer(modifier = Modifier.height(15.dp))
+                val video = currentVideo ?: return@Column
+                playerItems(viewModel ,video )
             }
             // Ye ha integration: Slider remove kar k CustomSeekBar add kiya
             val progress by viewModel.progress.collectAsState()

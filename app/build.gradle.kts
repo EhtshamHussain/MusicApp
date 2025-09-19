@@ -97,4 +97,5 @@ dependencies {
     //Status bar
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.27.0")
 
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 }

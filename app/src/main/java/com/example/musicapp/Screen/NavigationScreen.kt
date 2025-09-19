@@ -18,7 +18,7 @@ import com.example.musicapp.MusicViewModel
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
-fun NavigationScreen(modifier: Modifier) {
+fun NavigationScreen(modifier: Modifier= Modifier) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val viewModel = remember { MusicViewModel(context) }

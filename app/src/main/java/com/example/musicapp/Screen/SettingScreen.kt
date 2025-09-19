@@ -23,12 +23,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.AlertDialog
@@ -41,6 +48,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,25 +73,34 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.net.URL
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingScreen(modifier: Modifier = Modifier) {
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {Text("Setting")  },
-            )
-        }
-    ) {innerPadding ->
-
-    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding)
-            .background(color = MaterialTheme.colorScheme.background),
-    ) {
-
-    }
+            .background(MaterialTheme.colorScheme.background),
+        topBar = {
+            TopAppBar(
+                title = { Text("Setting") },
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.statusBars) // Status bar padding
+                    .statusBarsPadding(), // Extra padding for safety
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        },
+        contentWindowInsets = WindowInsets.systemBars // Full system bar handling
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize() // Ensure column fills full space
+                .padding(innerPadding) // Use full innerPadding directly
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Text("askdlfjasdfjasdlfj", modifier = Modifier.padding(16.dp)) // Add some padding for visibility
+        }
     }
 }
